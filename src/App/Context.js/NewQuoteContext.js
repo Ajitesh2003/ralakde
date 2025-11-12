@@ -15,7 +15,9 @@ export const QuoteProvider = ({ children }) => {
     // Template configuration state
     const [templateConfig, setTemplateConfig] = useState(() => {
         // Default configuration
+        const CONFIG_VERSION = '1.1'; // Increment this when adding new fields
         const defaultConfig = {
+            configVersion: CONFIG_VERSION,
             templateName: 'Standard Template',
             paperSize: 'A4',
             orientation: 'portrait',
@@ -35,19 +37,29 @@ export const QuoteProvider = ({ children }) => {
                 logoSize: 'medium',
                 quoteTitleText: 'Quote',
                 quoteTitlePosition: 'right',
-                applyToFirstPageOnly: false
+                applyToFirstPageOnly: false,
+                enableCustomContent: false,
+                customContent: '',
+                customContentPosition: 'below' // 'above' | 'below' | 'replace'
             },
             footer: {
-                backgroundColor: '#ffffff',
-                textColor: '#666666',
                 fontSize: 10,
+                textColor: '#aaaaaa',
+                backgroundImage: null,
+                imagePosition: 'center',
+                backgroundColorEnabled: false,
+                backgroundColor: '#ffffff',
                 showPageNumbers: true,
-                pageNumberFormat: 'Page X',
-                showSeparatorLine: true
+                pageNumberPosition: 'right',
+                pageNumberFormat: '${CurrentPageNumber}',
+                enableCustomContent: false,
+                customContent: '',
+                customContentPosition: 'above' // 'above' | 'below' | 'replace'
             },
             transactionDetails: {
                 // Organisation Details
                 showOrgLogo: true,
+                orgLogo: null,
                 orgLogoSize: 'medium',
                 showOrgName: true,
                 orgNameColor: '#333333',
@@ -67,6 +79,10 @@ export const QuoteProvider = ({ children }) => {
                 documentTitleText: 'Quote',
                 documentTitleFontSize: 28,
                 documentTitleColor: '#034287',
+                phone: '',
+                fax: '',
+                showAttentionContent: false,
+                attentionContent: '',
 
                 // Document Information field visibility
                 showNumberField: true,
@@ -165,10 +181,28 @@ export const QuoteProvider = ({ children }) => {
         const saved = localStorage.getItem('templateConfig');
         if (saved) {
             const savedConfig = JSON.parse(saved);
+            // Check version - if mismatch, use default config
+            if (savedConfig.configVersion !== CONFIG_VERSION) {
+                console.log('Config version mismatch, using default config');
+                localStorage.removeItem('templateConfig');
+                return defaultConfig;
+            }
             // Merge saved config with default config to ensure new properties exist
             return {
                 ...defaultConfig,
                 ...savedConfig,
+                header: {
+                    ...defaultConfig.header,
+                    ...(savedConfig.header || {})
+                },
+                footer: {
+                    ...defaultConfig.footer,
+                    ...(savedConfig.footer || {})
+                },
+                transactionDetails: {
+                    ...defaultConfig.transactionDetails,
+                    ...(savedConfig.transactionDetails || {})
+                },
                 table: {
                     ...defaultConfig.table,
                     ...(savedConfig.table || {})

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, themeColor, layoutStyle, tableConfig, totalConfig }) => {
+const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, themeColor, layoutStyle, tableConfig, totalConfig, templateConfig }) => {
   const isSpreadsheet = layoutStyle === 'SPREADSHEET';
 
   // Use default configuration if tableConfig is not provided
@@ -17,14 +17,14 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
       { id: 'amount', field: 'amount', label: 'Total', visible: true, width: 10, addTaxToAmount: false }
     ],
     borderColor: '#adadad',
-    headerFontSize: 9,
+    headerFontSize: templateConfig?.fontSize || 9,
     headerBackgroundColor: '#064384',
     headerFontColor: '#ffffff',
-    rowFontSize: 9,
+    rowFontSize: templateConfig?.fontSize || 9,
     rowBackgroundColor: '#ffffff',
-    rowFontColor: '#000000',
-    descriptionFontSize: 8,
-    descriptionFontColor: '#333333'
+    rowFontColor: templateConfig?.fontColor || '#000000',
+    descriptionFontSize: templateConfig?.fontSize ? templateConfig.fontSize - 1 : 8,
+    descriptionFontColor: templateConfig?.fontColor || '#333333'
   };
 
   // Use default configuration if totalConfig is not provided
@@ -37,12 +37,12 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
     currencyPosition: 'before',
     showQuantity: false,
     showAmountInWords: false,
-    totalSectionFontSize: 10,
-    totalSectionFontColor: '#000000',
+    totalSectionFontSize: templateConfig?.fontSize || 10,
+    totalSectionFontColor: templateConfig?.fontColor || '#000000',
     totalSectionBgEnabled: false,
     totalSectionBgColor: '#ffffff',
-    balanceDueFontSize: 12,
-    balanceDueFontColor: '#000000',
+    balanceDueFontSize: templateConfig?.fontSize ? templateConfig.fontSize + 2 : 12,
+    balanceDueFontColor: templateConfig?.fontColor || '#000000',
     balanceDueBgEnabled: false,
     balanceDueBgColor: '#f7f8f5'
   };
@@ -88,6 +88,52 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
         return index + 1;
 
       case 'item':
+        // Check if custom item template is enabled
+        if (config.itemTemplate?.enabled && config.itemTemplate?.content) {
+          // Helper function to replace placeholders
+          const replaceItemPlaceholders = (template, itemData, templateCfg) => {
+            let result = template;
+
+            // Item-specific placeholders
+            result = result.replace(/{itemName}/g, itemData.description || '');
+            result = result.replace(/{itemDescription}/g, itemData.detail || '');
+            result = result.replace(/{itemUnit}/g, itemData.unit || '');
+            result = result.replace(/{itemPrice}/g, itemData.rate || '');
+            result = result.replace(/{quantity}/g, itemData.qty || '');
+            result = result.replace(/{lineTotal}/g, itemData.amount || '');
+
+            // Company/Template placeholders (if available in templateConfig)
+            if (templateCfg) {
+              result = result.replace(/{companyName}/g, templateCfg.companyName || '');
+              result = result.replace(/{currentDate}/g, new Date().toLocaleDateString() || '');
+              result = result.replace(/{quoteNumber}/g, templateCfg.quoteNumber || '');
+              result = result.replace(/{quoteTitle}/g, templateCfg.quoteTitle || '');
+
+              // Customer details
+              result = result.replace(/{customerName}/g, templateCfg.customerName || '');
+              result = result.replace(/{customerAddress}/g, templateCfg.customerAddress || '');
+              result = result.replace(/{customerEmail}/g, templateCfg.customerEmail || '');
+              result = result.replace(/{customerPhone}/g, templateCfg.customerPhone || '');
+
+              // Quote details
+              result = result.replace(/{quoteDate}/g, templateCfg.quoteDate || '');
+              result = result.replace(/{expiryDate}/g, templateCfg.expiryDate || '');
+              result = result.replace(/{referenceNumber}/g, templateCfg.referenceNumber || '');
+              result = result.replace(/{salesPerson}/g, templateCfg.salesPerson || '');
+              result = result.replace(/{vatNumber}/g, templateCfg.vatNumber || '');
+            }
+
+            return result;
+          };
+
+          const customContent = replaceItemPlaceholders(config.itemTemplate.content, item, templateConfig);
+
+          return (
+            <div dangerouslySetInnerHTML={{ __html: customContent }} />
+          );
+        }
+
+        // Default rendering (when custom template is disabled or not set)
         return (
           <div>
             <p className="font-medium" style={{ color: config.rowFontColor, fontSize: `${config.rowFontSize}pt` }}>
@@ -157,20 +203,22 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
     <div className="">
       {/* Table Header */}
       <div
-        className={`flex font-semibold rounded-t ${isSpreadsheet ? 'border border-gray-300' : ''}`}
+        className={`flex font-semibold ${isSpreadsheet ? 'border' : ''}`}
         style={{
           backgroundColor: isSpreadsheet ? 'gray' : config.headerBackgroundColor,
           color: config.headerFontColor,
-          fontSize: `${config.headerFontSize}pt`
+          fontSize: `${config.headerFontSize}pt`,
+          ...(isSpreadsheet && { borderColor: config.borderColor, borderWidth: '1px' })
         }}
       >
         {visibleColumns.map((column, index) => (
           <div
             key={column.id}
-            className={`py-2 px-2 ${isSpreadsheet ? 'border-r border-gray-300 last:border-r-0' : ''}`}
+            className={`py-2 px-2 ${isSpreadsheet ? 'border-r last:border-r-0' : ''}`}
             style={{
               width: `${column.width}%`,
-              textAlign: getTextAlignment(column.id)
+              textAlign: getTextAlignment(column.id),
+              ...(isSpreadsheet && { borderColor: config.borderColor })
             }}
           >
             {column.label}
@@ -182,20 +230,23 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
       {items.map((item, index) => (
         <div
           key={item.id || index}
-          className={`flex ${isSpreadsheet ? 'border-x border-b border-gray-300' : 'border-b border-gray-200'}`}
+          className={`flex ${isSpreadsheet ? 'border-x border-b' : 'border-b'}`}
           style={{
             backgroundColor: config.rowBackgroundColor,
-            fontSize: `${config.rowFontSize}pt`
+            fontSize: `${config.rowFontSize}pt`,
+            borderColor: config.borderColor,
+            borderWidth: '1px'
           }}
         >
           {visibleColumns.map((column, colIndex) => (
             <div
               key={column.id}
-              className={`py-2 px-2 ${isSpreadsheet ? 'border-r border-gray-300 last:border-r-0' : ''}`}
+              className={`py-2 px-2 ${isSpreadsheet ? 'border-r last:border-r-0' : ''}`}
               style={{
                 width: `${column.width}%`,
                 textAlign: getTextAlignment(column.id),
-                color: config.rowFontColor
+                color: config.rowFontColor,
+                ...(isSpreadsheet && { borderColor: config.borderColor })
               }}
             >
               {renderCellContent(column, item, index)}
@@ -206,23 +257,47 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
 
       {/* Totals */}
       {isSpreadsheet ? (
-        <div className={`flex ${isSpreadsheet ? 'border-x border-b border-gray-300' : 'border-b border-gray-200'}`}>
+        <div
+          className={`flex ${isSpreadsheet ? 'border-x border-b' : 'border-b'}`}
+          style={{
+            borderColor: config.borderColor,
+            borderWidth: '1px'
+          }}
+        >
           {visibleColumns.map((column, index) => {
             if (column.id === 'taxableAmount') {
               return (
-                <div key={column.id} className={`py-2 px-2 text-right border-r border-gray-300`} style={{ width: `${column.width}%` }}>
+                <div
+                  key={column.id}
+                  className={`py-2 px-2 text-right border-r`}
+                  style={{
+                    width: `${column.width}%`,
+                    borderColor: config.borderColor
+                  }}
+                >
                   <span className="text-sm font-semibold">Sub Total {currency} {subTotal.toFixed(2)}</span>
                 </div>
               );
             } else if (column.id === 'vatAmount') {
               return (
-                <div key={column.id} className={`py-2 px-2 text-right border-r border-gray-300`} style={{ width: `${column.width}%` }}>
+                <div
+                  key={column.id}
+                  className={`py-2 px-2 text-right border-r`}
+                  style={{
+                    width: `${column.width}%`,
+                    borderColor: config.borderColor
+                  }}
+                >
                   <span className="text-sm">{currency} {vatAmount.toFixed(2)}</span>
                 </div>
               );
             } else if (column.id === 'amount') {
               return (
-                <div key={column.id} className={`py-2 px-2 text-right font-semibold`} style={{ width: `${column.width}%` }}>
+                <div
+                  key={column.id}
+                  className={`py-2 px-2 text-right font-semibold`}
+                  style={{ width: `${column.width}%` }}
+                >
                   <span className="text-sm font-semibold">{currency} {total.toFixed(2)}</span>
                 </div>
               );
@@ -245,7 +320,7 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
                     backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
                   }}
                 >
-                  <span>{totalsConfig.subTotal.label}</span>
+                  <span style={{ color: templateConfig?.labelColor || totalsConfig.totalSectionFontColor }}>{totalsConfig.subTotal.label}</span>
                   <span className="font-semibold">{formatCurrency(subTotal)}</span>
                 </div>
               )}
@@ -260,7 +335,7 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
                     backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
                   }}
                 >
-                  <span>{totalsConfig.discount.label}</span>
+                  <span style={{ color: templateConfig?.labelColor || totalsConfig.totalSectionFontColor }}>{totalsConfig.discount.label}</span>
                   <span className="font-semibold">{formatCurrency(discount)}</span>
                 </div>
               )}
@@ -275,7 +350,7 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
                     backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
                   }}
                 >
-                  <span>{totalsConfig.taxDetails.label}</span>
+                  <span style={{ color: templateConfig?.labelColor || totalsConfig.totalSectionFontColor }}>{totalsConfig.taxDetails.label}</span>
                   <span className="font-semibold">{formatCurrency(vatAmount)}</span>
                 </div>
               )}
@@ -290,7 +365,7 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
                     backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
                   }}
                 >
-                  <span>{totalsConfig.total.label}</span>
+                  <span style={{ color: templateConfig?.labelColor || totalsConfig.totalSectionFontColor }}>{totalsConfig.total.label}</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
               )}

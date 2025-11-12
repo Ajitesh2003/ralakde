@@ -1,58 +1,117 @@
 import React from 'react';
+import { replacePlaceholders, sanitizeHtml } from '../Utils/placeholderUtils';
 
-const PdfFooter = ({ currentPage = 1, totalPages = 1, templateConfig }) => {
+const PdfFooter = ({ currentPage = 1, totalPages = 1, templateConfig, data }) => {
   // Get footer customizations
   const footerConfig = templateConfig?.footer || {};
   const {
-    backgroundColor = '#ffffff',
-    textColor = '#666666',
     fontSize = 10,
+    textColor = '#aaaaaa',
+    backgroundImage = null,
+    imagePosition = 'center',
+    backgroundColorEnabled = false,
+    backgroundColor = '#ffffff',
     showPageNumbers = true,
-    pageNumberFormat = 'Page X',
-    showSeparatorLine = true,
+    pageNumberPosition = 'right',
+    pageNumberFormat = '${CurrentPageNumber}',
+    enableCustomContent = false,
+    customContent = '',
+    customContentPosition = 'above'
   } = footerConfig;
 
-  // Helper to format page number based on selected format
+  // Process custom content with placeholders
+  const processedCustomContent = React.useMemo(() => {
+    if (!enableCustomContent || !customContent) return '';
+
+    // Create extended data object with page numbers
+    const extendedData = {
+      ...data,
+      currentPage,
+      totalPages
+    };
+
+    const replaced = replacePlaceholders(customContent, extendedData, data?.companyDetails);
+    return sanitizeHtml(replaced);
+  }, [enableCustomContent, customContent, data, currentPage, totalPages]);
+
+  // Helper to format page number based on selected format with placeholder support
   const formatPageNumber = () => {
-    switch (pageNumberFormat) {
-      case 'Page X':
-        return `Page ${currentPage}`;
-      case 'X of Y':
-        return `${currentPage} of ${totalPages}`;
-      case 'X / Y':
-        return `${currentPage} / ${totalPages}`;
-      default:
-        return `Page ${currentPage}`;
-    }
+    return pageNumberFormat
+      .replace(/\$\{CurrentPageNumber\}/g, currentPage.toString())
+      .replace(/\$\{TotalPages\}/g, totalPages.toString());
+  };
+
+  // Helper to get image position styles
+  const getImagePositionStyles = () => {
+    const positions = {
+      'center': 'center center',
+      'top-left': 'left top',
+      'top-center': 'center top',
+      'top-right': 'right top',
+      'center-left': 'left center',
+      'center-right': 'right center',
+      'bottom-left': 'left bottom',
+      'bottom-center': 'center bottom',
+      'bottom-right': 'right bottom',
+    };
+    return positions[imagePosition] || 'center center';
+  };
+
+  // Helper to get page number alignment
+  const getPageNumberAlignment = () => {
+    const alignments = {
+      'left': 'text-left justify-start',
+      'center': 'text-center justify-center',
+      'right': 'text-right justify-end',
+    };
+    return alignments[pageNumberPosition] || 'text-right justify-end';
   };
 
   // Footer wrapper styles
   const footerStyle = {
-    backgroundColor,
+    backgroundColor: backgroundColorEnabled ? backgroundColor : 'transparent',
+    backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: getImagePositionStyles(),
+    backgroundRepeat: 'no-repeat',
     color: textColor,
-    fontSize: `${fontSize}px`,
+    fontSize: `${fontSize}pt`,
+  };
+
+  // Custom Content Component
+  const CustomContent = () => {
+    if (!processedCustomContent) return null;
+
+    return (
+      <div
+        className="custom-footer-content mb-2"
+        dangerouslySetInnerHTML={{ __html: processedCustomContent }}
+      />
+    );
+  };
+
+  // Page Numbers Component
+  const PageNumbers = () => {
+    if (!showPageNumbers) return null;
+
+    return (
+      <div className={`flex ${getPageNumberAlignment()} pb-2`} style={{ color: textColor, fontSize: `${fontSize}pt` }}>
+        <p>{formatPageNumber()}</p>
+      </div>
+    );
   };
 
   return (
-    // This div is structured to sit at the bottom of the A4 page container.
-    // The classes 'print:fixed' and 'print:bottom-0' are crucial for forcing
-    // the footer to the bottom of the viewport/page in print preview.
-    // However, since we are simulating an A4 container, standard CSS padding/margin
-    // is used for display, and we rely on print styles for actual printing.
-    <div className="absolute bottom-0 w-full pt-4 print:pt-0" style={footerStyle}>
-      {/* Footer Line (only visible on print/download) */}
-      {showSeparatorLine && (
-        <div className="print:block hidden border-t mb-2" style={{ borderColor: textColor }}></div>
-      )}
-
-      {/* Page Numbering (only visible on print/download) */}
-      {showPageNumbers && (
-        <div className="text-right print:block hidden" style={{ color: textColor, fontSize: `${fontSize}px` }}>
-          {/* Note: Browser print preview will handle the actual page count (totalPages).
-              This is a placeholder for the PDF generation library (like jsPDF)
-              to inject the correct numbering dynamically. */}
-          <p>{formatPageNumber()}</p>
-        </div>
+    <div className="w-full mt-8 pt-4 border-t" style={footerStyle}>
+      {/* Render content based on position setting */}
+      {customContentPosition === 'replace' && enableCustomContent ? (
+        <CustomContent />
+      ) : (
+        <>
+          {customContentPosition === 'above' && <CustomContent />}
+          <PageNumbers />
+          {customContentPosition === 'below' && <CustomContent />}
+        </>
       )}
     </div>
   );

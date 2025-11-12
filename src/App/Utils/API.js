@@ -64,10 +64,18 @@ const spreadsheetDetails = {
 
 const billingData = {
   name: 'Rob & Joe Traders',
-  addressLine1: '83 Upper St',
-  addressLine2: 'London',
-  zip: '94588 N1 ONU',
-  country: 'United Kingdom',
+  addressLine1: '24, Riche Street',
+  addressLine2: 'Chennai',
+  zip: '631603 Tamil Nadu',
+  country: 'India',
+};
+
+const shippingData = {
+  name: 'Rob & Joe Traders',
+  addressLine1: '34, Riche Street',
+  addressLine2: 'Chennai',
+  zip: '631603 Tamil Nadu',
+  country: 'India',
 };
 
 const standardItems = [
@@ -83,6 +91,7 @@ const mockData = {
     quoteType: 'Quote',
     companyDetails: { ...standardEUDetails, name: 'RALAKDE LIMITED' },
     billingDetails: billingData,
+    shippingDetails: shippingData,
     items: standardItems,
     themeColor: 'blue-800',
   },
@@ -101,6 +110,7 @@ const mockData = {
       phone: '+44 1782 563377, +420 702 112 125', // Dual numbers
     },
     billingDetails: billingData,
+    shippingDetails: shippingData,
     items: standardItems.map(item => ({...item, vatPercent: '0.00%', vat: 0.00, total: item.amount})), // Simulating B2B VAT exclusion
     themeColor: 'green-700',
     currency: '€',
@@ -112,6 +122,7 @@ const mockData = {
     quoteNumber: 'QT-17', // Different formatting
     companyDetails: spreadsheetDetails,
     billingDetails: billingData,
+    shippingDetails: shippingData,
     items: standardItems.map(item => ({...item, taxableAmount: item.rate * item.qty, total: item.amount + item.vat})), // Rename amount to taxableAmount, total is final
     themeColor: 'purple-800',
     currency: '£',
@@ -126,6 +137,7 @@ const mockData = {
       name: 'RALAKDE ELITE SOLUTIONS',
     },
     billingDetails: billingData,
+    shippingDetails: shippingData,
     items: standardItems,
 //     themeColor: 'red-700', // New theme color
     currency: '£',

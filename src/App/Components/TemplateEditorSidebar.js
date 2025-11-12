@@ -1,5 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { FileText, FileType, Grid, Table, DollarSign, FileCheck, ChevronDown, ChevronUp, Info, Upload, Settings } from 'lucide-react';
+import { FileText, FileType, Grid, Table, DollarSign, FileCheck, ChevronDown, ChevronRight, Info, Upload, Settings, Plus } from 'lucide-react';
+import HeaderContentModal from './HeaderContentModal';
+import FooterContentModal from './FooterContentModal';
+import AttentionContentModal from './AttentionContentModal';
+import ItemDescriptionModal from './ItemDescriptionModal';
 
 const TemplateEditorSidebar = ({
     templateConfig,
@@ -9,6 +13,10 @@ const TemplateEditorSidebar = ({
     const [activeTab, setActiveTab] = useState('general');
     const [tableSubTab, setTableSubTab] = useState('labels');
     const [totalSubTab, setTotalSubTab] = useState('labels');
+    const [isHeaderModalOpen, setIsHeaderModalOpen] = useState(false);
+    const [isFooterModalOpen, setIsFooterModalOpen] = useState(false);
+    const [isAttentionModalOpen, setIsAttentionModalOpen] = useState(false);
+    const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState({
         templateProperties: true,
         font: false,
@@ -18,7 +26,7 @@ const TemplateEditorSidebar = ({
         footerSection: false,
         organisationDetails: true,
         customerDetails: false,
-        documentDetails: false,
+        documentDetails: true,
         tableLabels: true,
         tableLayout: false,
         totalSection: true,
@@ -27,6 +35,7 @@ const TemplateEditorSidebar = ({
         annexure: false
     });
     const fileInputRef = useRef(null);
+    const backgroundImageInputRef = useRef(null);
     const tabs = [
         { id: 'general', icon: FileText, label: 'General' },
         { id: 'header', icon: FileType, label: 'Header &\nFooter' },
@@ -69,10 +78,13 @@ const TemplateEditorSidebar = ({
     };
 
     const handleTransactionDetailsChange = (field, value) => {
-        onConfigChange({
+        console.log('handleTransactionDetailsChange:', field, value);
+        const newConfig = {
             ...templateConfig,
             transactionDetails: { ...templateConfig.transactionDetails, [field]: value }
-        });
+        };
+        console.log('New config transactionDetails:', newConfig.transactionDetails);
+        onConfigChange(newConfig);
     };
 
     const handleTableChange = (field, value) => {
@@ -141,6 +153,31 @@ const TemplateEditorSidebar = ({
         }
     };
 
+    const handleBackgroundImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (1MB max)
+            if (file.size > 1024 * 1024) {
+                alert('File size must be less than 1MB');
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['image/gif', 'image/png', 'image/jpeg', 'image/jpg', 'image/bmp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Supported formats: GIF, PNG, JPEG, JPG, BMP');
+                return;
+            }
+
+            // Convert to base64
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                handleChange('backgroundImage', reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     return (
         <div className={`fixed left-0 top-16 bottom-0 w-[420px] bg-gray-50 border-r border-gray-200 flex print:hidden transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             {/* Icon Tabs */}
@@ -176,14 +213,10 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Template Properties</span>
-                                {expandedSections.templateProperties ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.templateProperties ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.templateProperties && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.templateProperties ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Template Name */}
                                     <div>
@@ -265,7 +298,7 @@ const TemplateEditorSidebar = ({
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Font Section */}
@@ -275,23 +308,20 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Font</span>
-                                {expandedSections.font ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.font ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.font && (
-                                <div className="px-4 pb-4 space-y-3">
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.font ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                <div className="px-4 pb-4 space-y-4">
+                                    {/* PDF Font */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Font Family
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            PDF Font
                                         </label>
                                         <select
                                             value={templateConfig.fontFamily || 'Arial'}
                                             onChange={(e) => handleChange('fontFamily', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
                                         >
                                             <option value="Arial">Arial</option>
                                             <option value="Helvetica">Helvetica</option>
@@ -300,8 +330,73 @@ const TemplateEditorSidebar = ({
                                             <option value="Courier New">Courier New</option>
                                         </select>
                                     </div>
+
+                                    {/* Label Colour */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Label Colour
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={templateConfig.labelColor || '#333333'}
+                                                onChange={(e) => handleChange('labelColor', e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                                                placeholder="#333333"
+                                            />
+                                            <input
+                                                type="color"
+                                                value={templateConfig.labelColor || '#333333'}
+                                                onChange={(e) => handleChange('labelColor', e.target.value)}
+                                                className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Font Colour and Font Size in same row */}
+                                    <div className='grid grid-cols-2 gap-3'>
+                                        {/* Font Colour */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Font Colour
+                                            </label>
+                                            <div className="flex items-center gap-1.5">
+                                                <input
+                                                    type="text"
+                                                    value={templateConfig.fontColor || '#333333'}
+                                                    onChange={(e) => handleChange('fontColor', e.target.value)}
+                                                    className="w-20 px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-xs"
+                                                    placeholder="#333333"
+                                                />
+                                                <input
+                                                    type="color"
+                                                    value={templateConfig.fontColor || '#333333'}
+                                                    onChange={(e) => handleChange('fontColor', e.target.value)}
+                                                    className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Font Size */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Font Size
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    min="6"
+                                                    max="72"
+                                                    value={templateConfig.fontSize || 9}
+                                                    onChange={(e) => handleChange('fontSize', parseInt(e.target.value))}
+                                                    className="flex-1 w-10 px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                />
+                                                <span className="text-sm text-gray-600 font-medium">pt</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Background Section */}
@@ -311,18 +406,122 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Background</span>
-                                {expandedSections.background ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.background ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.background && (
-                                <div className="px-4 pb-4">
-                                    <p className="text-sm text-gray-500">Background options coming soon...</p>
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.background ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                <div className="px-4 pb-4 space-y-4">
+                                    {/* Background Image */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Background Image
+                                        </label>
+                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                            <input
+                                                ref={backgroundImageInputRef}
+                                                type="file"
+                                                accept="image/gif,image/png,image/jpeg,image/jpg,image/bmp"
+                                                onChange={handleBackgroundImageUpload}
+                                                className="hidden"
+                                            />
+                                            {templateConfig.backgroundImage ? (
+                                                <div className="space-y-2">
+                                                    <img
+                                                        src={templateConfig.backgroundImage}
+                                                        alt="Background"
+                                                        className="max-h-20 mx-auto rounded"
+                                                    />
+                                                    <div className="flex gap-2 justify-center">
+                                                        <button
+                                                            onClick={() => backgroundImageInputRef.current?.click()}
+                                                            className="text-xs text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            Change
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleChange('backgroundImage', null)}
+                                                            className="text-xs text-red-600 hover:text-red-800"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <Upload className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                                                    <p className="text-sm text-gray-600 mb-1">
+                                                        Drag and drop or{' '}
+                                                        <button
+                                                            onClick={() => backgroundImageInputRef.current?.click()}
+                                                            className="text-blue-600 hover:text-blue-800 font-medium"
+                                                        >
+                                                            Upload file
+                                                        </button>
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        Maximum size: 1 MB<br />
+                                                        Supported Formats: GIF, PNG, JPEG, JPG, BMP
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Image Position */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Image Position
+                                        </label>
+                                        <select
+                                            value={templateConfig.backgroundPosition || 'center center'}
+                                            onChange={(e) => handleChange('backgroundPosition', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
+                                        >
+                                            <option value="center center">Centre centre</option>
+                                            <option value="top left">Top left</option>
+                                            <option value="top center">Top centre</option>
+                                            <option value="top right">Top right</option>
+                                            <option value="center left">Centre left</option>
+                                            <option value="center right">Centre right</option>
+                                            <option value="bottom left">Bottom left</option>
+                                            <option value="bottom center">Bottom centre</option>
+                                            <option value="bottom right">Bottom right</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Background Colour */}
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={templateConfig.backgroundColorEnabled || false}
+                                                onChange={(e) => handleChange('backgroundColorEnabled', e.target.checked)}
+                                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Background Colour
+                                            </label>
+                                        </div>
+                                        {templateConfig.backgroundColorEnabled && (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={templateConfig.backgroundColor || '#ffffff'}
+                                                    onChange={(e) => handleChange('backgroundColor', e.target.value)}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                                                    placeholder="#ffffff"
+                                                />
+                                                <input
+                                                    type="color"
+                                                    value={templateConfig.backgroundColor || '#ffffff'}
+                                                    onChange={(e) => handleChange('backgroundColor', e.target.value)}
+                                                    className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -337,14 +536,10 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Header</span>
-                                {expandedSections.headerSection ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.headerSection ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.headerSection && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.headerSection ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Background Image */}
                                     <div>
@@ -447,86 +642,46 @@ const TemplateEditorSidebar = ({
                                     </div>
 
                                     {/* Customise header content */}
-                                    <div className="border-t border-gray-200 pt-3">
+                                    <div className="border-t border-gray-200 pt-3 space-y-3">
+                                        {/* Enable Custom Content Toggle */}
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-medium text-gray-700">
+                                                Enable Custom Header Content
+                                            </label>
+                                            <input
+                                                type="checkbox"
+                                                checked={templateConfig.header?.enableCustomContent || false}
+                                                onChange={(e) => handleHeaderChange('enableCustomContent', e.target.checked)}
+                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Custom Content Position */}
+                                        {templateConfig.header?.enableCustomContent && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                    Custom Content Position
+                                                </label>
+                                                <select
+                                                    value={templateConfig.header?.customContentPosition || 'below'}
+                                                    onChange={(e) => handleHeaderChange('customContentPosition', e.target.value)}
+                                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="above">Above existing header</option>
+                                                    <option value="below">Below existing header</option>
+                                                    <option value="replace">Replace existing header</option>
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Customise Button */}
                                         <button
-                                            onClick={() => toggleSection('headerCustomize')}
-                                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+                                            onClick={() => setIsHeaderModalOpen(true)}
+                                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 w-full"
                                         >
                                             <Settings className="w-4 h-4" />
                                             Customise your header content
                                         </button>
-
-                                        {expandedSections.headerCustomize && (
-                                            <div className="mt-3 space-y-3 pl-4 border-l-2 border-blue-200">
-                                                {/* Logo Position */}
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                        Logo Position
-                                                    </label>
-                                                    <select
-                                                        value={templateConfig.header?.logoPosition || 'left'}
-                                                        onChange={(e) => handleHeaderChange('logoPosition', e.target.value)}
-                                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                    >
-                                                        <option value="left">Left</option>
-                                                        <option value="center">Center</option>
-                                                        <option value="right">Right</option>
-                                                    </select>
-                                                </div>
-
-                                                {/* Logo Size */}
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                        Logo Size
-                                                    </label>
-                                                    <div className="flex gap-2">
-                                                        {['small', 'medium', 'large'].map(size => (
-                                                            <label key={size} className="flex items-center flex-1">
-                                                                <input
-                                                                    type="radio"
-                                                                    name="logoSize"
-                                                                    value={size}
-                                                                    checked={templateConfig.header?.logoSize === size}
-                                                                    onChange={(e) => handleHeaderChange('logoSize', e.target.value)}
-                                                                    className="mr-1.5"
-                                                                />
-                                                                <span className="text-xs text-gray-700 capitalize">{size}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Quote Title Text */}
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                        Quote Title
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={templateConfig.header?.quoteTitleText || 'Quote'}
-                                                        onChange={(e) => handleHeaderChange('quoteTitleText', e.target.value)}
-                                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="Quote"
-                                                    />
-                                                </div>
-
-                                                {/* Quote Title Position */}
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                        Quote Title Position
-                                                    </label>
-                                                    <select
-                                                        value={templateConfig.header?.quoteTitlePosition || 'right'}
-                                                        onChange={(e) => handleHeaderChange('quoteTitlePosition', e.target.value)}
-                                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                    >
-                                                        <option value="left">Left</option>
-                                                        <option value="center">Center</option>
-                                                        <option value="right">Right</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* Apply to first page only */}
@@ -543,7 +698,7 @@ const TemplateEditorSidebar = ({
                                         </label>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Footer Section */}
@@ -553,75 +708,121 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Footer</span>
-                                {expandedSections.footerSection ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.footerSection ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.footerSection && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.footerSection ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
-                                    {/* Background Color */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Background Color
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="color"
-                                                value={templateConfig.footer?.backgroundColor || '#ffffff'}
-                                                onChange={(e) => handleFooterChange('backgroundColor', e.target.value)}
-                                                className="h-10 w-16 border border-gray-300 rounded cursor-pointer"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={templateConfig.footer?.backgroundColor || '#ffffff'}
-                                                onChange={(e) => handleFooterChange('backgroundColor', e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                placeholder="#ffffff"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Text Color */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Text Color
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="color"
-                                                value={templateConfig.footer?.textColor || '#666666'}
-                                                onChange={(e) => handleFooterChange('textColor', e.target.value)}
-                                                className="h-10 w-16 border border-gray-300 rounded cursor-pointer"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={templateConfig.footer?.textColor || '#666666'}
-                                                onChange={(e) => handleFooterChange('textColor', e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                placeholder="#666666"
-                                            />
-                                        </div>
-                                    </div>
-
                                     {/* Font Size */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Font Size (px)
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Font Size
                                         </label>
-                                        <input
-                                            type="number"
-                                            min="8"
-                                            max="16"
-                                            value={templateConfig.footer?.fontSize || 10}
-                                            onChange={(e) => handleFooterChange('fontSize', parseInt(e.target.value))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                        />
+                                        <div className="flex gap-2 items-center">
+                                            <input
+                                                type="number"
+                                                min="6"
+                                                max="20"
+                                                value={templateConfig.footer?.fontSize || 10}
+                                                onChange={(e) => handleFooterChange('fontSize', parseInt(e.target.value))}
+                                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm text-gray-600">pt</span>
+                                        </div>
                                     </div>
 
-                                    {/* Show Page Numbers */}
+                                    {/* Font Colour */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Font Colour
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={templateConfig.footer?.textColor || '#aaaaaa'}
+                                                onChange={(e) => handleFooterChange('textColor', e.target.value)}
+                                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                placeholder="#aaaaaa"
+                                            />
+                                            <input
+                                                type="color"
+                                                value={templateConfig.footer?.textColor || '#aaaaaa'}
+                                                onChange={(e) => handleFooterChange('textColor', e.target.value)}
+                                                className="h-9 w-12 border border-gray-300 rounded cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Background Image */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                                            Background Image
+                                        </label>
+                                        <div className="text-center border-2 border-dashed border-gray-300 rounded-lg p-4">
+                                            <Upload className="w-8 h-8 mx-auto text-blue-500 mb-2" />
+                                            <p className="text-sm text-gray-600 mb-1">Drag and drop or <button className="text-blue-600 hover:underline">Upload file</button></p>
+                                            <p className="text-xs text-gray-500">Maximum size: 1 MB</p>
+                                            <p className="text-xs text-gray-500">Supported Formats: GIF, PNG, JPEG, JPG, BMP</p>
+                                            <button className="mt-2 text-sm text-blue-600 hover:underline">Choose from Gallery</button>
+                                        </div>
+                                    </div>
+
+                                    {/* Image Position */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Image Position
+                                        </label>
+                                        <select
+                                            value={templateConfig.footer?.imagePosition || 'center'}
+                                            onChange={(e) => handleFooterChange('imagePosition', e.target.value)}
+                                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="center">Centre centre</option>
+                                            <option value="top-left">Top left</option>
+                                            <option value="top-center">Top center</option>
+                                            <option value="top-right">Top right</option>
+                                            <option value="center-left">Center left</option>
+                                            <option value="center-right">Center right</option>
+                                            <option value="bottom-left">Bottom left</option>
+                                            <option value="bottom-center">Bottom center</option>
+                                            <option value="bottom-right">Bottom right</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Background Colour */}
+                                    <div>
+                                        <div className="flex items-center mb-2">
+                                            <input
+                                                type="checkbox"
+                                                id="footerBgColorEnabled"
+                                                checked={templateConfig.footer?.backgroundColorEnabled ?? false}
+                                                onChange={(e) => handleFooterChange('backgroundColorEnabled', e.target.checked)}
+                                                className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                            <label htmlFor="footerBgColorEnabled" className="text-xs font-medium text-gray-700">
+                                                Background Colour
+                                            </label>
+                                        </div>
+                                        {templateConfig.footer?.backgroundColorEnabled && (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={templateConfig.footer?.backgroundColor || '#ffffff'}
+                                                    onChange={(e) => handleFooterChange('backgroundColor', e.target.value)}
+                                                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="#ffffff"
+                                                />
+                                                <input
+                                                    type="color"
+                                                    value={templateConfig.footer?.backgroundColor || '#ffffff'}
+                                                    onChange={(e) => handleFooterChange('backgroundColor', e.target.value)}
+                                                    className="h-9 w-12 border border-gray-300 rounded cursor-pointer"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Page Number */}
                                     <div className="flex items-center">
                                         <input
                                             type="checkbox"
@@ -630,44 +831,99 @@ const TemplateEditorSidebar = ({
                                             onChange={(e) => handleFooterChange('showPageNumbers', e.target.checked)}
                                             className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
-                                        <label htmlFor="showPageNumbers" className="text-sm text-gray-700">
-                                            Show Page Numbers
+                                        <label htmlFor="showPageNumbers" className="text-xs font-medium text-gray-700">
+                                            Page Number
                                         </label>
                                     </div>
 
-                                    {/* Page Number Format */}
+                                    {/* Page Number Position */}
                                     {templateConfig.footer?.showPageNumbers && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Page Number Format
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                Page Number Position
                                             </label>
                                             <select
-                                                value={templateConfig.footer?.pageNumberFormat || 'Page X'}
-                                                onChange={(e) => handleFooterChange('pageNumberFormat', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                value={templateConfig.footer?.pageNumberPosition || 'right'}
+                                                onChange={(e) => handleFooterChange('pageNumberPosition', e.target.value)}
+                                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                                             >
-                                                <option value="Page X">Page X</option>
-                                                <option value="X of Y">X of Y</option>
-                                                <option value="X / Y">X / Y</option>
+                                                <option value="left">Left</option>
+                                                <option value="center">Center</option>
+                                                <option value="right">Right</option>
                                             </select>
                                         </div>
                                     )}
 
-                                    {/* Show Separator Line */}
-                                    <div className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            id="showSeparatorLine"
-                                            checked={templateConfig.footer?.showSeparatorLine ?? true}
-                                            onChange={(e) => handleFooterChange('showSeparatorLine', e.target.checked)}
-                                            className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        />
-                                        <label htmlFor="showSeparatorLine" className="text-sm text-gray-700">
-                                            Show Separator Line
-                                        </label>
+                                    {/* Page Number Format */}
+                                    {templateConfig.footer?.showPageNumbers && (
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                Page Number Format
+                                                <button className="ml-2 text-blue-600 text-xs hover:underline">Pre-defined Formats</button>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={templateConfig.footer?.pageNumberFormat || '${CurrentPageNumber}'}
+                                                onChange={(e) => handleFooterChange('pageNumberFormat', e.target.value)}
+                                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 mb-1"
+                                                placeholder="${CurrentPageNumber}"
+                                            />
+                                            <p className="text-xs text-gray-500">Preview : <span className="font-medium">1</span></p>
+                                            <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                                                <div className="flex items-start gap-2">
+                                                    <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                                    <p className="text-xs text-gray-700">
+                                                        <strong>Note:</strong> Use placeholders ${'{'}CurrentPageNumber{'}'} for the current page number, ${'{'}TotalPages{'}'} for the total pages count.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Customise footer content */}
+                                    <div className="border-t border-gray-200 pt-3 mt-4 space-y-3">
+                                        {/* Enable Custom Content Toggle */}
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-medium text-gray-700">
+                                                Enable Custom Footer Content
+                                            </label>
+                                            <input
+                                                type="checkbox"
+                                                checked={templateConfig.footer?.enableCustomContent || false}
+                                                onChange={(e) => handleFooterChange('enableCustomContent', e.target.checked)}
+                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Custom Content Position */}
+                                        {templateConfig.footer?.enableCustomContent && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                    Custom Content Position
+                                                </label>
+                                                <select
+                                                    value={templateConfig.footer?.customContentPosition || 'above'}
+                                                    onChange={(e) => handleFooterChange('customContentPosition', e.target.value)}
+                                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="above">Above page numbers</option>
+                                                    <option value="below">Below page numbers</option>
+                                                    <option value="replace">Replace page numbers</option>
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Customise Button */}
+                                        <button
+                                            onClick={() => setIsFooterModalOpen(true)}
+                                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 w-full"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                            Customise your footer content
+                                        </button>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -683,13 +939,13 @@ const TemplateEditorSidebar = ({
                             >
                                 <span className="font-semibold text-gray-800">Organisation Details</span>
                                 {expandedSections.organisationDetails ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
                                     <ChevronDown className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-500" />
                                 )}
                             </button>
 
-                            {expandedSections.organisationDetails && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.organisationDetails ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Show Organisation Logo */}
                                     <div className="flex items-center">
@@ -705,28 +961,72 @@ const TemplateEditorSidebar = ({
                                         </label>
                                     </div>
 
-                                    {/* Resize Logo */}
+                                    {/* Upload Logo / Logo Preview */}
                                     {templateConfig.transactionDetails?.showOrgLogo && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Resize Logo
-                                            </label>
-                                            <div className="flex gap-2 items-center">
-                                                {['small', 'medium', 'large'].map(size => (
-                                                    <label key={size} className="flex items-center flex-1">
-                                                        <input
-                                                            type="radio"
-                                                            name="orgLogoSize"
-                                                            value={size}
-                                                            checked={templateConfig.transactionDetails?.orgLogoSize === size}
-                                                            onChange={(e) => handleTransactionDetailsChange('orgLogoSize', e.target.value)}
-                                                            className="mr-1.5"
-                                                        />
-                                                        <span className="text-xs text-gray-700 capitalize">{size}</span>
-                                                    </label>
-                                                ))}
+                                        <>
+                                            <div
+                                                className="border border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors bg-gray-100 relative"
+                                                onClick={() => {
+                                                    const input = document.createElement('input');
+                                                    input.type = 'file';
+                                                    input.accept = 'image/*';
+                                                    input.onchange = (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onload = (event) => {
+                                                                handleTransactionDetailsChange('orgLogo', event.target.result);
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    };
+                                                    input.click();
+                                                }}
+                                            >
+                                                {templateConfig.transactionDetails?.orgLogo ? (
+                                                    <img
+                                                        src={templateConfig.transactionDetails.orgLogo}
+                                                        alt="Organization Logo"
+                                                        className="max-h-32 mx-auto object-contain"
+                                                    />
+                                                ) : (
+                                                    <div className="py-8">
+                                                        <Upload className="w-6 h-6 mx-auto mb-2 text-gray-500" />
+                                                        <p className="text-sm text-gray-600">Upload your Files</p>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
+
+                                            {/* Info Message */}
+                                            <div className="flex items-start gap-2 text-xs text-gray-500">
+                                                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                                <span className="italic">You can change the logo in Organization Profile.</span>
+                                            </div>
+
+                                            {/* Resize Logo Slider */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="text-sm font-medium text-gray-700">
+                                                        Resize Logo
+                                                    </label>
+                                                    <Info className="w-4 h-4 text-gray-400" />
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="1"
+                                                    max="3"
+                                                    value={
+                                                        templateConfig.transactionDetails?.orgLogoSize === 'small' ? 1 :
+                                                        templateConfig.transactionDetails?.orgLogoSize === 'large' ? 3 : 2
+                                                    }
+                                                    onChange={(e) => {
+                                                        const sizeMap = { 1: 'small', 2: 'medium', 3: 'large' };
+                                                        handleTransactionDetailsChange('orgLogoSize', sizeMap[e.target.value]);
+                                                    }}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                />
+                                            </div>
+                                        </>
                                     )}
 
                                     {/* Show Organisation Name */}
@@ -743,44 +1043,54 @@ const TemplateEditorSidebar = ({
                                         </label>
                                     </div>
 
-                                    {/* Organisation Name Styling */}
+                                    {/* Organisation Name Styling - Color and Font Size in One Row */}
                                     {templateConfig.transactionDetails?.showOrgName && (
-                                        <>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Colour
+                                        <div className="flex gap-3 w-full">
+                                            {/* Color Section - 50% */}
+                                            <div className="flex-1 w-1/2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Color
                                                 </label>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="color"
-                                                        value={templateConfig.transactionDetails?.orgNameColor || '#333333'}
-                                                        onChange={(e) => handleTransactionDetailsChange('orgNameColor', e.target.value)}
-                                                        className="h-10 w-16 border border-gray-300 rounded cursor-pointer"
-                                                    />
+                                                <div className="flex gap-2 items-center">
                                                     <input
                                                         type="text"
-                                                        value={templateConfig.transactionDetails?.orgNameColor || '#333333'}
+                                                        value={templateConfig.transactionDetails?.orgNameColor || '#000000'}
                                                         onChange={(e) => handleTransactionDetailsChange('orgNameColor', e.target.value)}
-                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="#333333"
+                                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="#000000"
+                                                    />
+                                                    <div
+                                                        className="w-10 h-10 border border-gray-300 rounded cursor-pointer flex-shrink-0"
+                                                        style={{ backgroundColor: templateConfig.transactionDetails?.orgNameColor || '#000000' }}
+                                                        onClick={() => {
+                                                            const input = document.createElement('input');
+                                                            input.type = 'color';
+                                                            input.value = templateConfig.transactionDetails?.orgNameColor || '#000000';
+                                                            input.onchange = (e) => handleTransactionDetailsChange('orgNameColor', e.target.value);
+                                                            input.click();
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
 
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Font Size (pt)
+                                            {/* Font Size Section - 50% */}
+                                            <div className="flex-1 w-1/2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Font Size
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    min="8"
-                                                    max="24"
-                                                    value={templateConfig.transactionDetails?.orgNameFontSize || 10}
-                                                    onChange={(e) => handleTransactionDetailsChange('orgNameFontSize', parseInt(e.target.value))}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        min="8"
+                                                        max="24"
+                                                        value={templateConfig.transactionDetails?.orgNameFontSize || 12}
+                                                        onChange={(e) => handleTransactionDetailsChange('orgNameFontSize', parseInt(e.target.value))}
+                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-600 flex-shrink-0">pt</span>
+                                                </div>
                                             </div>
-                                        </>
+                                        </div>
                                     )}
 
                                     {/* Show Organisation Address */}
@@ -796,8 +1106,22 @@ const TemplateEditorSidebar = ({
                                             Show Organisation Address
                                         </label>
                                     </div>
+
+                                    {/* Organization Address Format Button */}
+                                    {templateConfig.transactionDetails?.showOrgAddress && (
+                                        <button
+                                            onClick={() => {
+                                                // TODO: Open Organization Address Format Modal
+                                                alert('Organization Address Format modal coming soon');
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                            Organization Address Format
+                                        </button>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Customer Details Section */}
@@ -808,13 +1132,13 @@ const TemplateEditorSidebar = ({
                             >
                                 <span className="font-semibold text-gray-800">Customer Details</span>
                                 {expandedSections.customerDetails ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
                                     <ChevronDown className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-500" />
                                 )}
                             </button>
 
-                            {expandedSections.customerDetails && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.customerDetails ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Customer Name Styling */}
                                     <div>
@@ -910,7 +1234,7 @@ const TemplateEditorSidebar = ({
                                         )}
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Document Details Section */}
@@ -921,13 +1245,13 @@ const TemplateEditorSidebar = ({
                             >
                                 <span className="font-semibold text-gray-800">Document Details</span>
                                 {expandedSections.documentDetails ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
                                     <ChevronDown className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-500" />
                                 )}
                             </button>
 
-                            {expandedSections.documentDetails && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.documentDetails ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Show Document Title */}
                                     <div className="flex items-center">
@@ -995,6 +1319,37 @@ const TemplateEditorSidebar = ({
                                             </div>
                                         </>
                                     )}
+
+                                    {/* Phone and Fax Number Fields */}
+                                    <div className="flex gap-3 w-full">
+                                        {/* Phone Field - 50% */}
+                                        <div className="flex-1 w-1/2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Phone
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={templateConfig.transactionDetails?.phone || ''}
+                                                onChange={(e) => handleTransactionDetailsChange('phone', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Phone"
+                                            />
+                                        </div>
+
+                                        {/* Fax Number Field - 50% */}
+                                        <div className="flex-1 w-1/2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Fax Number
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={templateConfig.transactionDetails?.fax || ''}
+                                                onChange={(e) => handleTransactionDetailsChange('fax', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Fax"
+                                            />
+                                        </div>
+                                    </div>
 
                                     {/* Document Information */}
                                     <div className="border-t border-gray-200 pt-3">
@@ -1202,10 +1557,25 @@ const TemplateEditorSidebar = ({
                                                     />
                                                 )}
                                             </div>
+
+                                            {/* Add Attention Content Button */}
+                                            <button
+                                                onClick={() => {
+                                                    setIsAttentionModalOpen(true);
+                                                    // Auto-enable attention content when opening modal
+                                                    if (!templateConfig.transactionDetails?.showAttentionContent) {
+                                                        handleTransactionDetailsChange('showAttentionContent', true);
+                                                    }
+                                                }}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors mt-3"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Add Attention Content
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1348,11 +1718,36 @@ const TemplateEditorSidebar = ({
                                     </div>
                                 )}
 
-                                {/* Customize Item Name & Description Button (Non-functional) */}
+                                {/* Enable/Disable Custom Item Format Toggle */}
+                                {templateConfig.table?.itemTemplate?.content && (
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-3">
+                                        <span className="text-sm text-gray-700">Enable Custom Item Format</span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={templateConfig.table?.itemTemplate?.enabled || false}
+                                                onChange={(e) => onConfigChange({
+                                                    ...templateConfig,
+                                                    table: {
+                                                        ...templateConfig.table,
+                                                        itemTemplate: {
+                                                            ...templateConfig.table?.itemTemplate,
+                                                            enabled: e.target.checked
+                                                        }
+                                                    }
+                                                })}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                )}
+
+                                {/* Customize Item Name & Description Button */}
                                 {templateConfig.table?.columns?.length > 0 && (
                                 <button
                                     className="w-full px-4 py-2 text-sm text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2"
-                                    disabled
+                                    onClick={() => setIsItemModalOpen(true)}
                                 >
                                     <Settings className="w-4 h-4" />
                                     Customize Item Name & Description
@@ -1579,14 +1974,10 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Total Section</span>
-                                {expandedSections.totalSection ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.totalSection ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.totalSection && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.totalSection ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Sub-tabs */}
                                     <div className="flex gap-2">
@@ -1935,7 +2326,7 @@ const TemplateEditorSidebar = ({
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Taxes Section */}
@@ -1945,14 +2336,10 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Taxes</span>
-                                {expandedSections.taxesSection ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.taxesSection ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.taxesSection && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.taxesSection ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-3">
                                     {/* Show Tax Breakdown */}
                                     <div className="flex items-center">
@@ -2016,7 +2403,7 @@ const TemplateEditorSidebar = ({
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -2031,14 +2418,10 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Document Summary</span>
-                                {expandedSections.documentSummary ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.documentSummary ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.documentSummary && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.documentSummary ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-4">
                                     {/* Notes Subsection */}
                                     <div className="space-y-3">
@@ -2162,7 +2545,7 @@ const TemplateEditorSidebar = ({
                                         )}
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Annexure Section */}
@@ -2172,14 +2555,10 @@ const TemplateEditorSidebar = ({
                                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
                             >
                                 <span className="font-semibold text-gray-800">Annexure</span>
-                                {expandedSections.annexure ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${expandedSections.annexure ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {expandedSections.annexure && (
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedSections.annexure ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className="px-4 pb-4 space-y-3">
                                     <p className="text-xs text-gray-600 leading-relaxed">
                                         Click <strong>Add Annexure Content</strong> to enter additional information apart from your Terms & Conditions. It can include by-laws, clauses and other details pertaining to your organization. This will be included on a separate page at the end of every Quote.
@@ -2194,7 +2573,7 @@ const TemplateEditorSidebar = ({
                                         Add Annexure Content
                                     </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -2210,6 +2589,108 @@ const TemplateEditorSidebar = ({
                     </div>
                 )}
             </div>
+
+            {/* Header Content Modal */}
+            <HeaderContentModal
+                isOpen={isHeaderModalOpen}
+                onClose={() => setIsHeaderModalOpen(false)}
+                initialContent={templateConfig.header?.customContent || ''}
+                onSave={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        header: {
+                            ...templateConfig.header,
+                            customContent: content
+                        }
+                    });
+                }}
+                onPreview={(content) => {
+                    // Apply content for preview - update both customContent and enableCustomContent in a single state update
+                    onConfigChange({
+                        ...templateConfig,
+                        header: {
+                            ...templateConfig.header,
+                            customContent: content,
+                            enableCustomContent: true
+                        }
+                    });
+                }}
+            />
+
+            {/* Footer Content Modal */}
+            <FooterContentModal
+                isOpen={isFooterModalOpen}
+                onClose={() => setIsFooterModalOpen(false)}
+                initialContent={templateConfig.footer?.customContent || ''}
+                onSave={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        footer: {
+                            ...templateConfig.footer,
+                            customContent: content
+                        }
+                    });
+                }}
+                onPreview={(content) => {
+                    // Apply content for preview - update both customContent and enableCustomContent in a single state update
+                    onConfigChange({
+                        ...templateConfig,
+                        footer: {
+                            ...templateConfig.footer,
+                            customContent: content,
+                            enableCustomContent: true
+                        }
+                    });
+                }}
+            />
+
+            {/* Attention Content Modal */}
+            <AttentionContentModal
+                isOpen={isAttentionModalOpen}
+                onClose={() => setIsAttentionModalOpen(false)}
+                initialContent={templateConfig.transactionDetails?.attentionContent || ''}
+                onSave={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        transactionDetails: {
+                            ...templateConfig.transactionDetails,
+                            attentionContent: content,
+                            showAttentionContent: true
+                        }
+                    });
+                }}
+            />
+
+            {/* Item Description Modal */}
+            <ItemDescriptionModal
+                isOpen={isItemModalOpen}
+                onClose={() => setIsItemModalOpen(false)}
+                initialContent={templateConfig.table?.itemTemplate?.content || ''}
+                onSave={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        table: {
+                            ...templateConfig.table,
+                            itemTemplate: {
+                                ...templateConfig.table?.itemTemplate,
+                                content: content
+                            }
+                        }
+                    });
+                }}
+                onPreview={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        table: {
+                            ...templateConfig.table,
+                            itemTemplate: {
+                                enabled: true,
+                                content: content
+                            }
+                        }
+                    });
+                }}
+            />
         </div>
     );
 };

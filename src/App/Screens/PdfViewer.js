@@ -13,9 +13,9 @@ import { Loader2 } from 'lucide-react';
 const getPaperDimensions = (paperSize, orientation) => {
     // Define paper sizes in inches (width x height in portrait mode)
     const sizes = {
-        'A4': { width: 9, height: 12 },
-        'A5': { width: 7, height: 10 },
-        'Letter': { width: 10, height: 13 }
+        'A4': { width: 8, height: 12 },
+        'A5': { width: 7, height: 12 },
+        'Letter': { width: 9, height: 12 }
     };
 
     // Get dimensions for selected paper size (default to A4)
@@ -30,20 +30,42 @@ const getPaperDimensions = (paperSize, orientation) => {
 };
 
 // Utility component for the main printable document area
-const DocumentArea = ({ children, margins = {}, fontFamily = 'Arial', paperSize = 'A4', orientation = 'portrait' }) => {
+const DocumentArea = ({ children, margins = {}, fontFamily = 'Arial', paperSize = 'A4', orientation = 'portrait', backgroundImage, backgroundPosition, backgroundColor, backgroundColorEnabled }) => {
     const { width, height } = getPaperDimensions(paperSize, orientation);
+
+    const getBackgroundStyle = () => {
+        let style = {};
+
+        // Apply background color if enabled
+        if (backgroundColorEnabled && backgroundColor) {
+            style.backgroundColor = backgroundColor;
+        } else if (!backgroundImage) {
+            style.backgroundColor = 'white';
+        }
+
+        // Apply background image if exists
+        if (backgroundImage) {
+            style.backgroundImage = `url(${backgroundImage})`;
+            style.backgroundPosition = backgroundPosition || 'center center';
+            style.backgroundRepeat = 'no-repeat';
+            style.backgroundSize = 'cover';
+        }
+
+        return style;
+    };
 
     return (
         <div
             id="pdf-document"
-            className="bg-white shadow-xl rounded-lg mx-auto mb-8
+            className="shadow-xl rounded-lg mx-auto mb-8
                        print:shadow-none print:w-full print:max-w-full print:m-0 print:rounded-none print:mb-0"
             style={{
                 width: `${width}in`,
                 minHeight: `${height}in`,
                 padding: `${margins.top || 0.7}in ${margins.right || 0.4}in ${margins.bottom || 0.7}in ${margins.left || 0.55}in`,
                 fontFamily: fontFamily,
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                ...getBackgroundStyle()
             }}
         >
             {children}
@@ -145,6 +167,10 @@ const PdfViewerScreen = () => {
                         fontFamily={templateConfig.fontFamily}
                         paperSize={templateConfig.paperSize}
                         orientation={templateConfig.orientation}
+                        backgroundImage={templateConfig.backgroundImage}
+                        backgroundPosition={templateConfig.backgroundPosition}
+                        backgroundColor={templateConfig.backgroundColor}
+                        backgroundColorEnabled={templateConfig.backgroundColorEnabled}
                     >
 
                 {/* Header (Logo & Quote Title) */}
@@ -165,6 +191,7 @@ const PdfViewerScreen = () => {
                     layoutStyle={data.layoutStyle}
                     tableConfig={templateConfig.table}
                     totalConfig={templateConfig.total}
+                    templateConfig={templateConfig}
                 />
 
                 {/* Terms and Conditions (Placeholder) */}
@@ -178,7 +205,12 @@ const PdfViewerScreen = () => {
                 </div>
 
                 {/* Fixed Footer for Printing */}
-                <PdfFooter themeColor={templateConfig.themeColor} isPrinting={isPrinting} layoutStyle={data.layoutStyle} templateConfig={templateConfig} />
+                <PdfFooter
+                    currentPage={1}
+                    totalPages={1}
+                    templateConfig={templateConfig}
+                    data={data}
+                />
             </DocumentArea>
                 </div>
             </div>

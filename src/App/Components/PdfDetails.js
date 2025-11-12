@@ -2,10 +2,18 @@ import React from 'react';
 import LOGO_URL from '../Assets/logo.webp';
 
 const PdfDetails = ({ data, themeColor, templateConfig }) => {
-  const { companyDetails, billingDetails, quoteDate, expiryDate, salesPerson, reference, vatNo, quoteNumber, layoutStyle } = data;
+  const { companyDetails, billingDetails, shippingDetails, quoteDate, expiryDate, salesPerson, reference, vatNo, quoteNumber, layoutStyle } = data;
 
   // Get transaction details customizations
   const transConfig = templateConfig?.transactionDetails || {};
+
+  // Debug logging
+  console.log('PdfDetails - transConfig:', transConfig);
+  console.log('PdfDetails - phone:', transConfig.phone);
+  console.log('PdfDetails - fax:', transConfig.fax);
+  console.log('PdfDetails - showAttentionContent:', transConfig.showAttentionContent);
+  console.log('PdfDetails - attentionContent:', transConfig.attentionContent);
+  console.log('PdfDetails - layoutStyle:', layoutStyle);
 
   const themeHex = {
     'blue-800': '#1e40af',
@@ -13,19 +21,19 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
     'purple-800': '#581c87',
   }[themeColor] || '#1e40af';
 
-  // Helper to get logo size class
-  const getLogoSizeClass = () => {
+  // Helper to get logo size in pixels
+  const getLogoSize = () => {
     const sizes = {
-      'small': 'max-h-[50px]',
-      'medium': 'max-h-[80px]',
-      'large': 'max-h-[120px]',
+      'small': 50,
+      'medium': 80,
+      'large': 120,
     };
-    return sizes[transConfig.orgLogoSize] || 'max-h-[80px]';
+    return sizes[transConfig.orgLogoSize] || 80;
   };
 
   const DetailLine = ({ label, value, labelClass = 'font-normal', valueClass = 'font-semibold' }) => (
-  <p className="flex justify-between items-start text-sm text-gray-700">
-    <span className={labelClass}>{label}:</span>
+  <p className="flex justify-between items-start text-sm" style={{ color: templateConfig.fontColor || '#374151', fontSize: `${templateConfig.fontSize || 9}pt` }}>
+    <span className={labelClass} style={{ color: templateConfig.labelColor || '#374151' }}>{label}:</span>
     <span className={`text-right ${valueClass}`}>{value}</span>
   </p>
 );
@@ -35,13 +43,13 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
     if (!transConfig.showBillTo) return null;
 
     return (
-      <div className="text-sm leading-tight text-gray-800 space-y-0.5 p-2">
-        <p className="font-bold mb-1">{transConfig.billToLabel || 'Bill To'}</p>
+      <div className="text-sm leading-tight space-y-0.5 p-2" style={{ color: templateConfig.fontColor || '#1f2937', fontSize: `${templateConfig.fontSize || 9}pt` }}>
+        <p className="font-bold mb-1" style={{ color: templateConfig.labelColor || '#1f2937' }}>{transConfig.billToLabel || 'Bill To'}</p>
         <p
           className="font-semibold"
           style={{
-            color: transConfig.customerNameColor || '#333333',
-            fontSize: `${transConfig.customerNameFontSize || 9}pt`
+            color: transConfig.customerNameColor || templateConfig.fontColor || '#333333',
+            fontSize: `${transConfig.customerNameFontSize || templateConfig.fontSize || 9}pt`
           }}
         >
           {billingDetails.name}
@@ -58,35 +66,41 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
   const renderShipToAddress = () => {
     if (!transConfig.showShipTo) return null;
 
-    // Using billing details as ship to for now (can be extended to use separate shipping data)
+    // Using shipping details
+    const shipDetails = shippingDetails || billingDetails; // Fallback to billing if shipping not available
     return (
-      <div className="text-sm leading-tight text-gray-800 space-y-0.5 p-2">
-        <p className="font-bold mb-1">{transConfig.shipToLabel || 'Ship To'}</p>
+      <div className="text-sm leading-tight space-y-0.5 p-2" style={{ color: templateConfig.fontColor || '#1f2937', fontSize: `${templateConfig.fontSize || 9}pt` }}>
+        <p className="font-bold mb-1" style={{ color: templateConfig.labelColor || '#1f2937' }}>{transConfig.shipToLabel || 'Ship To'}</p>
         <p
           className="font-semibold"
           style={{
-            color: transConfig.customerNameColor || '#333333',
-            fontSize: `${transConfig.customerNameFontSize || 9}pt`
+            color: transConfig.customerNameColor || templateConfig.fontColor || '#333333',
+            fontSize: `${transConfig.customerNameFontSize || templateConfig.fontSize || 9}pt`
           }}
         >
-          {billingDetails.name}
+          {shipDetails.name}
         </p>
-        <p>{billingDetails.addressLine1}</p>
-        <p>{billingDetails.addressLine2}</p>
-        <p>{billingDetails.zip}</p>
-        <p>{billingDetails.country}</p>
+        <p>{shipDetails.addressLine1}</p>
+        <p>{shipDetails.addressLine2}</p>
+        <p>{shipDetails.zip}</p>
+        <p>{shipDetails.country}</p>
       </div>
     );
   };
 
   // --- Company Address Block ---
   const renderCompanyAddress = () => (
-    <div className="text-sm leading-tight text-gray-800 space-y-0.5 p-2">
+    <div className="text-sm leading-tight space-y-0.5 p-2" style={{ color: templateConfig.fontColor || '#1f2937', fontSize: `${templateConfig.fontSize || 9}pt` }}>
       {transConfig.showOrgLogo && (
         <img
-          src={LOGO_URL}
+          src={transConfig.orgLogo || LOGO_URL}
           alt="Company Logo"
-          className={`${getLogoSizeClass()} w-auto object-contain mb-2`}
+          style={{
+            maxHeight: `${getLogoSize()}px`,
+            width: 'auto',
+            objectFit: 'contain',
+            marginBottom: '8px'
+          }}
         />
       )}
       {transConfig.showOrgName && (
@@ -94,7 +108,7 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
           className="font-bold mb-1"
           style={{
             color: transConfig.orgNameColor || themeHex,
-            fontSize: `${transConfig.orgNameFontSize || 10}pt`
+            fontSize: `${transConfig.orgNameFontSize || templateConfig.fontSize || 10}pt`
           }}
         >
           {companyDetails.name}
@@ -105,7 +119,7 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
           <p>{companyDetails.addressLine1}</p>
           <p>{companyDetails.addressLine2}</p>
           <p>{companyDetails.country}</p>
-          <p>VAT {companyDetails.vat}</p>
+          <p><span style={{ color: templateConfig.labelColor || '#1f2937' }}>VAT</span> {companyDetails.vat}</p>
           <p>{companyDetails.phone}</p>
           <p>{companyDetails.email}</p>
           <p>{companyDetails.website}</p>
@@ -139,6 +153,14 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
             <div className="p-2 text-sm">Description</div>
           </div>
         )}
+
+        {/* Attention Content */}
+        {transConfig.showAttentionContent && transConfig.attentionContent && (
+          <div className="border-t border-gray-300 p-2">
+            <p className="font-semibold text-sm mb-1">Attention:</p>
+            <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{transConfig.attentionContent}</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -156,6 +178,12 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
             <div className='text-lg text-gray-400 mt-5'>Paid To</div>
             <div className='text-lg text-gray-400 mt-5'>Payment Mode</div>
             <div className='text-lg text-gray-400 mt-5'>Paid Through</div>
+            {transConfig.phone && transConfig.phone.trim() !== '' && (
+              <div className='text-lg text-gray-400 mt-5'>Phone</div>
+            )}
+            {transConfig.fax && transConfig.fax.trim() !== '' && (
+              <div className='text-lg text-gray-400 mt-5'>Fax</div>
+            )}
           </div>
           <div className='my-10'>
             <div className='text-lg text-black-400 mt-5 border-b-2 border-gray-200'>Payment#</div>
@@ -164,6 +192,12 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
             <div className='text-lg text-black-400 mt-5 border-b-2 border-gray-200'>Paid To</div>
             <div className='text-lg text-black-400 mt-5 border-b-2 border-gray-200'>Payment Mode</div>
             <div className='text-lg text-black-400 mt-5 border-b-2 border-gray-200'>Paid Through</div>
+            {transConfig.phone && transConfig.phone.trim() !== '' && (
+              <div className='text-lg text-black-400 mt-5 border-b-2 border-gray-200'>{transConfig.phone}</div>
+            )}
+            {transConfig.fax && transConfig.fax.trim() !== '' && (
+              <div className='text-lg text-black-400 mt-5 border-b-2 border-gray-200'>{transConfig.fax}</div>
+            )}
           </div>
           <div className='my-10 bg-green-300 w-40 h-32 flex flex-col justify-center items-center'>
             <h1 className='text-sm text-white '>Amount Paid</h1>
@@ -177,6 +211,14 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
         <div className=' text-black-400'>demo</div>
         <div className=' text-black-400'>United Kingdom</div>
       </div>
+
+      {/* Attention Content */}
+      {transConfig.showAttentionContent && transConfig.attentionContent && (
+        <div className="mb-8">
+          <p className="font-semibold text-base mb-2">Attention:</p>
+          <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{transConfig.attentionContent}</p>
+        </div>
+      )}
 
       </div>
     )
@@ -216,6 +258,20 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
       {transConfig.showProject && (
         <DetailLine label={transConfig.projectLabel || 'Project Name'} value="N/A" />
       )}
+      {(() => {
+        const shouldShowPhone = transConfig.phone && transConfig.phone.trim() !== '';
+        console.log('Should show phone?', shouldShowPhone, transConfig.phone);
+        return shouldShowPhone;
+      })() && (
+        <DetailLine label="Phone" value={transConfig.phone} />
+      )}
+      {(() => {
+        const shouldShowFax = transConfig.fax && transConfig.fax.trim() !== '';
+        console.log('Should show fax?', shouldShowFax, transConfig.fax);
+        return shouldShowFax;
+      })() && (
+        <DetailLine label="Fax" value={transConfig.fax} />
+      )}
     </div>
   );
 
@@ -242,6 +298,13 @@ return (
         <div className="w-full mt-4 ml-2">
           <p>{transConfig.subjectLabel || 'Subject'} :</p>
           <p>Description</p>
+        </div>
+      )}
+
+      {transConfig.showAttentionContent && transConfig.attentionContent && (
+        <div className="w-full mt-4 ml-2">
+          <p className="font-semibold mb-2">Attention:</p>
+          <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{transConfig.attentionContent}</p>
         </div>
       )}
     </div>
