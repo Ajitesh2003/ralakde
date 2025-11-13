@@ -4,6 +4,8 @@ import HeaderContentModal from './HeaderContentModal';
 import FooterContentModal from './FooterContentModal';
 import AttentionContentModal from './AttentionContentModal';
 import ItemDescriptionModal from './ItemDescriptionModal';
+import BankDetailsModal from './BankDetailsModal';
+import AnnexureContentModal from './AnnexureContentModal';
 
 const TemplateEditorSidebar = ({
     templateConfig,
@@ -17,6 +19,8 @@ const TemplateEditorSidebar = ({
     const [isFooterModalOpen, setIsFooterModalOpen] = useState(false);
     const [isAttentionModalOpen, setIsAttentionModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+    const [isBankDetailsModalOpen, setIsBankDetailsModalOpen] = useState(false);
+    const [isAnnexureModalOpen, setIsAnnexureModalOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState({
         templateProperties: true,
         font: false,
@@ -2136,31 +2140,53 @@ const TemplateEditorSidebar = ({
                                             </div>
 
                                             {/* Show Quantity */}
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id="showQuantity"
-                                                    checked={templateConfig.total?.showQuantity ?? false}
-                                                    onChange={(e) => handleTotalChange('showQuantity', e.target.checked)}
-                                                    className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <label htmlFor="showQuantity" className="text-sm text-gray-700">
-                                                    Show Quantity
-                                                </label>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center flex-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="showQuantity"
+                                                        checked={templateConfig.total?.quantity?.visible ?? false}
+                                                        onChange={(e) => handleTotalLabelChange('quantity', 'visible', e.target.checked)}
+                                                        className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <label htmlFor="showQuantity" className="text-sm text-gray-700">
+                                                        Show Quantity
+                                                    </label>
+                                                </div>
+                                                {templateConfig.total?.quantity?.visible && (
+                                                    <input
+                                                        type="text"
+                                                        value={templateConfig.total?.quantity?.label || 'Items'}
+                                                        onChange={(e) => handleTotalLabelChange('quantity', 'label', e.target.value)}
+                                                        className="w-40 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Items"
+                                                    />
+                                                )}
                                             </div>
 
                                             {/* Show amount in words */}
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id="showAmountInWords"
-                                                    checked={templateConfig.total?.showAmountInWords ?? false}
-                                                    onChange={(e) => handleTotalChange('showAmountInWords', e.target.checked)}
-                                                    className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <label htmlFor="showAmountInWords" className="text-sm text-gray-700">
-                                                    Show amount in words
-                                                </label>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center flex-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="showAmountInWords"
+                                                        checked={templateConfig.total?.amountInWords?.visible ?? false}
+                                                        onChange={(e) => handleTotalLabelChange('amountInWords', 'visible', e.target.checked)}
+                                                        className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <label htmlFor="showAmountInWords" className="text-sm text-gray-700">
+                                                        Show amount in words
+                                                    </label>
+                                                </div>
+                                                {templateConfig.total?.amountInWords?.visible && (
+                                                    <input
+                                                        type="text"
+                                                        value={templateConfig.total?.amountInWords?.label || 'Total In Words'}
+                                                        onChange={(e) => handleTotalLabelChange('amountInWords', 'label', e.target.value)}
+                                                        className="w-40 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Total In Words"
+                                                    />
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -2458,10 +2484,10 @@ const TemplateEditorSidebar = ({
                                             </div>
                                         </div>
 
-                                        {/* Add Bank Details Button (Non-functional) */}
+                                        {/* Add Bank Details Button */}
                                         <button
+                                            onClick={() => setIsBankDetailsModalOpen(true)}
                                             className="w-full px-4 py-2 text-sm text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2"
-                                            disabled
                                         >
                                             <Settings className="w-4 h-4" />
                                             Add your bank details
@@ -2564,10 +2590,10 @@ const TemplateEditorSidebar = ({
                                         Click <strong>Add Annexure Content</strong> to enter additional information apart from your Terms & Conditions. It can include by-laws, clauses and other details pertaining to your organization. This will be included on a separate page at the end of every Quote.
                                     </p>
 
-                                    {/* Add Annexure Content Button (Non-functional) */}
+                                    {/* Add Annexure Content Button */}
                                     <button
+                                        onClick={() => setIsAnnexureModalOpen(true)}
                                         className="w-full px-4 py-2 text-sm text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition flex items-center justify-center gap-2"
-                                        disabled
                                     >
                                         <Settings className="w-4 h-4" />
                                         Add Annexure Content
@@ -2687,6 +2713,60 @@ const TemplateEditorSidebar = ({
                                 enabled: true,
                                 content: content
                             }
+                        }
+                    });
+                }}
+            />
+
+            {/* Bank Details Modal */}
+            <BankDetailsModal
+                isOpen={isBankDetailsModalOpen}
+                onClose={() => setIsBankDetailsModalOpen(false)}
+                initialContent={templateConfig.otherDetails?.bankDetailsContent || ''}
+                onSave={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        otherDetails: {
+                            ...templateConfig.otherDetails,
+                            bankDetailsContent: content,
+                            showBankDetails: content.trim() !== ''
+                        }
+                    });
+                }}
+                onPreview={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        otherDetails: {
+                            ...templateConfig.otherDetails,
+                            bankDetailsContent: content,
+                            showBankDetails: content.trim() !== ''
+                        }
+                    });
+                }}
+            />
+
+            {/* Annexure Content Modal */}
+            <AnnexureContentModal
+                isOpen={isAnnexureModalOpen}
+                onClose={() => setIsAnnexureModalOpen(false)}
+                initialContent={templateConfig.otherDetails?.annexureContent || ''}
+                onSave={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        otherDetails: {
+                            ...templateConfig.otherDetails,
+                            annexureContent: content,
+                            showAnnexure: content.trim() !== ''
+                        }
+                    });
+                }}
+                onPreview={(content) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        otherDetails: {
+                            ...templateConfig.otherDetails,
+                            annexureContent: content,
+                            showAnnexure: content.trim() !== ''
                         }
                     });
                 }}

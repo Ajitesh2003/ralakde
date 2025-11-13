@@ -15,7 +15,7 @@ export const QuoteProvider = ({ children }) => {
     // Template configuration state
     const [templateConfig, setTemplateConfig] = useState(() => {
         // Default configuration
-        const CONFIG_VERSION = '1.1'; // Increment this when adding new fields
+        const CONFIG_VERSION = '1.4'; // Increment this when adding new fields
         const defaultConfig = {
             configVersion: CONFIG_VERSION,
             templateName: 'Standard Template',
@@ -143,8 +143,8 @@ export const QuoteProvider = ({ children }) => {
                 taxDetails: { visible: true, label: 'VAT' },
                 total: { visible: true, label: 'Total' },
                 currencyPosition: 'before', // 'before' or 'after'
-                showQuantity: false,
-                showAmountInWords: false,
+                quantity: { visible: false, label: 'Items' },
+                amountInWords: { visible: false, label: 'Total In Words' },
 
                 // Layout Configuration
                 totalSectionFontSize: 10,
@@ -173,7 +173,16 @@ export const QuoteProvider = ({ children }) => {
                 signatureLabel: 'Authorized Signature',
 
                 // Annexure
-                showAnnexure: false
+                showAnnexure: false,
+                annexureLabel: 'Annexure',
+                annexureContent: '',
+                annexureFontSize: 8,
+
+                // Bank Details
+                showBankDetails: false,
+                bankDetailsLabel: 'Bank Details',
+                bankDetailsContent: '',
+                bankDetailsFontSize: 8
             }
         };
 

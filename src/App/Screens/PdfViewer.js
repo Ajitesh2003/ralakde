@@ -4,6 +4,7 @@ import PdfDetails from '../Components/PdfDetails';
 import PdfTable from '../Components/PdfTable';
 import PdfFooter from '../Components/PdfFooter';
 import PdfNotesAndTerms from '../Components/PdfNotesAndTerms';
+import PdfAnnexure from '../Components/PdfAnnexure';
 import TopActionBar from '../Components/TopActionBar';
 import TemplateEditorSidebar from '../Components/TemplateEditorSidebar';
 import { useQuoteContext } from '../Context.js/NewQuoteContext';
@@ -114,6 +115,19 @@ const PdfViewerScreen = () => {
 
     const { quoteType, items, subTotal, discount, vatAmount, total, currency } = data;
 
+    // Helper function to check if HTML content has actual text
+    const hasActualContent = (htmlContent) => {
+        if (!htmlContent) return false;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        return textContent.trim().length > 0;
+    };
+
+    // Calculate total pages based on whether annexure exists
+    const hasAnnexure = templateConfig.otherDetails?.showAnnexure && hasActualContent(templateConfig.otherDetails?.annexureContent);
+    const totalPages = hasAnnexure ? 2 : 1;
+
     return (
         <>
             <style>
@@ -160,7 +174,7 @@ const PdfViewerScreen = () => {
 
             {/* Main Content Area - shifted right to accommodate sidebar */}
             <div className={`mt-16 p-8 bg-gray-100 min-h-screen print:ml-0 print:mt-0 print:p-0 print:bg-white transition-all duration-300 ${isSidebarOpen ? 'ml-[420px]' : 'ml-0'}`}>
-                <div className="flex justify-center">
+                <div className="flex flex-col justify-center items-center">
                     {/* Main Printable Document */}
                     <DocumentArea
                         margins={templateConfig.margins}
@@ -207,11 +221,40 @@ const PdfViewerScreen = () => {
                 {/* Fixed Footer for Printing */}
                 <PdfFooter
                     currentPage={1}
-                    totalPages={1}
+                    totalPages={totalPages}
                     templateConfig={templateConfig}
                     data={data}
                 />
             </DocumentArea>
+
+                    {/* Annexure Page - Separate page at the end */}
+                    {hasAnnexure && (
+                        <div className="mt-8">
+                            <DocumentArea
+                                margins={templateConfig.margins}
+                                fontFamily={templateConfig.fontFamily}
+                                paperSize={templateConfig.paperSize}
+                                orientation={templateConfig.orientation}
+                                backgroundImage={templateConfig.backgroundImage}
+                                backgroundPosition={templateConfig.backgroundPosition}
+                                backgroundColor={templateConfig.backgroundColor}
+                                backgroundColorEnabled={templateConfig.backgroundColorEnabled}
+                            >
+                                {/* Annexure Content */}
+                                <div className="pt-8">
+                                    <PdfAnnexure templateConfig={templateConfig} />
+                                </div>
+
+                                {/* Footer for Annexure Page */}
+                                <PdfFooter
+                                    currentPage={2}
+                                    totalPages={totalPages}
+                                    templateConfig={templateConfig}
+                                    data={data}
+                                />
+                            </DocumentArea>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

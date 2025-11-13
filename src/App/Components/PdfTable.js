@@ -1,4 +1,5 @@
 import React from 'react';
+import { toWords } from 'number-to-words';
 
 const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, themeColor, layoutStyle, tableConfig, totalConfig, templateConfig }) => {
   const isSpreadsheet = layoutStyle === 'SPREADSHEET';
@@ -35,8 +36,8 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
     taxDetails: { visible: true, label: 'VAT' },
     total: { visible: true, label: 'Total' },
     currencyPosition: 'before',
-    showQuantity: false,
-    showAmountInWords: false,
+    quantity: { visible: false, label: 'Items' },
+    amountInWords: { visible: false, label: 'Total In Words' },
     totalSectionFontSize: templateConfig?.fontSize || 10,
     totalSectionFontColor: templateConfig?.fontColor || '#000000',
     totalSectionBgEnabled: false,
@@ -56,6 +57,27 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
     return totalsConfig.currencyPosition === 'after'
       ? `${amount.toFixed(2)} ${currency}`
       : formattedAmount;
+  };
+
+  // Calculate total quantity
+  const calculateTotalQuantity = () => {
+    return items.reduce((sum, item) => sum + (item.qty || 0), 0);
+  };
+
+  // Convert amount to words with currency
+  const formatAmountInWords = (amount) => {
+    const pounds = Math.floor(amount);
+    const pence = Math.round((amount - pounds) * 100);
+
+    let result = toWords(pounds).replace(/\b\w/g, char => char.toUpperCase());
+
+    if (pence > 0) {
+      result += ` ${currency} and ${pence}/100 Pence`;
+    } else {
+      result += ` ${currency}`;
+    }
+
+    return result;
   };
 
   // Elite layout (special case)
@@ -265,19 +287,52 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
           }}
         >
           {visibleColumns.map((column, index) => {
-            if (column.id === 'taxableAmount') {
-              return (
+            // Handle Sub Total row layout
+            if (column.id === 'lineItemNumber' || column.id === 'item' || column.id === 'description' || column.id === 'customFields' || column.id === 'quantity') {
+              // Empty columns before 'rate' - no borders
+              return totalsConfig.subTotal.visible ? (
                 <div
-                  key={column.id}
-                  className={`py-2 px-2 text-right border-r`}
+                  key={`${column.id}-subtotal`}
+                  className="py-2 px-2"
+                  style={{
+                    width: `${column.width}%`
+                  }}
+                />
+              ) : <div key={column.id} className="py-2 px-2" style={{ width: `${column.width}%` }}></div>;
+            } else if (column.id === 'rate') {
+              // Sub Total label under 'rate' column
+              return totalsConfig.subTotal.visible ? (
+                <div
+                  key={`${column.id}-subtotal`}
+                  className="py-2 px-2 text-right border-r"
                   style={{
                     width: `${column.width}%`,
-                    borderColor: config.borderColor
+                    borderColor: config.borderColor,
+                    fontSize: `${totalsConfig.totalSectionFontSize}pt`,
+                    color: totalsConfig.totalSectionFontColor,
+                    backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
                   }}
                 >
-                  <span className="text-sm font-semibold">Sub Total {currency} {subTotal.toFixed(2)}</span>
+                  <span className="font-semibold">{totalsConfig.subTotal.label}</span>
                 </div>
-              );
+              ) : <div key={column.id} className="py-2 px-2" style={{ width: `${column.width}%` }}></div>;
+            } else if (column.id === 'taxableAmount') {
+              // Sub Total amount under 'taxableAmount' column
+              return totalsConfig.subTotal.visible ? (
+                <div
+                  key={`${column.id}-subtotal`}
+                  className="py-2 px-2 text-right border-r"
+                  style={{
+                    width: `${column.width}%`,
+                    borderColor: config.borderColor,
+                    fontSize: `${totalsConfig.totalSectionFontSize}pt`,
+                    color: totalsConfig.totalSectionFontColor,
+                    backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
+                  }}
+                >
+                  <span className="font-semibold">{formatCurrency(subTotal)}</span>
+                </div>
+              ) : <div key={column.id} className="py-2 px-2" style={{ width: `${column.width}%` }}></div>;
             } else if (column.id === 'vatAmount') {
               return (
                 <div
@@ -288,7 +343,7 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
                     borderColor: config.borderColor
                   }}
                 >
-                  <span className="text-sm">{currency} {vatAmount.toFixed(2)}</span>
+                  <span className="text-sm">{formatCurrency(vatAmount)}</span>
                 </div>
               );
             } else if (column.id === 'amount') {
@@ -298,7 +353,7 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
                   className={`py-2 px-2 text-right font-semibold`}
                   style={{ width: `${column.width}%` }}
                 >
-                  <span className="text-sm font-semibold">{currency} {total.toFixed(2)}</span>
+                  <span className="text-sm font-semibold">{formatCurrency(total)}</span>
                 </div>
               );
             } else {
@@ -372,6 +427,50 @@ const PdfTable = ({ items, subTotal, discount, vatAmount, total, currency, theme
             </div>
           </div>
         )
+      )}
+
+      {/* Show Quantity and Amount in Words Section - Below Totals */}
+      {(totalsConfig.quantity?.visible || totalsConfig.amountInWords?.visible) && (
+        <div className={`${isSpreadsheet ? 'border-x border-b' : 'flex justify-end'} `}
+          style={isSpreadsheet ? {
+            borderColor: config.borderColor,
+            borderWidth: '1px'
+          } : {}}>
+          <div className={isSpreadsheet ? 'w-full' : 'w-full sm:w-2/5 md:w-1/3'}>
+            {totalsConfig.quantity?.visible && (
+              <div className={`flex justify-between py-2 px-3 ${isSpreadsheet ? 'border-t' : ''}`}
+                style={isSpreadsheet ? {
+                  borderColor: config.borderColor,
+                  borderWidth: '1px',
+                  fontSize: `${totalsConfig.totalSectionFontSize}pt`,
+                  color: totalsConfig.totalSectionFontColor,
+                  backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
+                } : {
+                  fontSize: `${totalsConfig.totalSectionFontSize}pt`,
+                  color: totalsConfig.totalSectionFontColor
+                }}>
+                <span className="font-semibold">{totalsConfig.quantity?.label || 'Items'}</span>
+                <span>{calculateTotalQuantity()}</span>
+              </div>
+            )}
+            {totalsConfig.amountInWords?.visible && (
+              <div className={`flex justify-between py-2 px-3 ${isSpreadsheet ? 'border-t' : ''}`}
+                style={isSpreadsheet ? {
+                  borderColor: config.borderColor,
+                  borderWidth: '1px',
+                  fontSize: `${totalsConfig.totalSectionFontSize}pt`,
+                  color: totalsConfig.totalSectionFontColor,
+                  backgroundColor: totalsConfig.totalSectionBgEnabled ? totalsConfig.totalSectionBgColor : 'transparent'
+                } : {
+                  fontSize: `${totalsConfig.totalSectionFontSize}pt`,
+                  color: totalsConfig.totalSectionFontColor
+                }}>
+                <span className="font-semibold">{totalsConfig.amountInWords?.label || 'Total In Words'}</span>
+                <span className="text-right flex-1 ml-4">{formatAmountInWords(total)}</span>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

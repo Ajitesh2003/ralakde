@@ -11,7 +11,22 @@ const PdfNotesAndTerms = ({ data, layoutStyle, templateConfig }) => {
         termsFontSize: 8,
         showSignature: false,
         signatureLabel: 'Authorized Signature',
-        showAnnexure: false
+        showAnnexure: false,
+        showBankDetails: false,
+        bankDetailsLabel: 'Bank Details',
+        bankDetailsContent: '',
+        bankDetailsFontSize: 8
+    };
+
+    // Helper function to check if HTML content has actual text
+    const hasActualContent = (htmlContent) => {
+        if (!htmlContent) return false;
+        // Create a temporary div to strip HTML tags
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        // Check if there's any non-whitespace text
+        return textContent.trim().length > 0;
     };
 
     if (layoutStyle === 'SPREADSHEET') {
@@ -29,6 +44,20 @@ const PdfNotesAndTerms = ({ data, layoutStyle, templateConfig }) => {
                         <p className="text-gray-600" style={{ fontSize: `${config.notesFontSize}pt` }}>
                             {data.notes2 || 'Additional notes or payment instructions.'}
                         </p>
+                    </div>
+                )}
+
+                {/* Bank Details Section */}
+                {config.showBankDetails && hasActualContent(config.bankDetailsContent) && (
+                    <div className="p-4 border-t border-gray-300">
+                        <h3 className="font-bold mb-1" style={{ fontSize: `${config.bankDetailsFontSize + 2}pt` }}>
+                            {config.bankDetailsLabel}
+                        </h3>
+                        <div
+                            className="text-gray-700"
+                            style={{ fontSize: `${config.bankDetailsFontSize}pt` }}
+                            dangerouslySetInnerHTML={{ __html: config.bankDetailsContent }}
+                        />
                     </div>
                 )}
 
@@ -77,6 +106,20 @@ const PdfNotesAndTerms = ({ data, layoutStyle, templateConfig }) => {
                     <p className="mb-4 text-gray-600 border-b border-gray-200 pb-4" style={{ fontSize: `${config.notesFontSize}pt` }}>
                         {data.notes2}
                     </p>
+                </>
+            )}
+
+            {/* Bank Details Section */}
+            {config.showBankDetails && hasActualContent(config.bankDetailsContent) && (
+                <>
+                    <h3 className="font-bold mb-1 mt-4" style={{ fontSize: `${config.bankDetailsFontSize + 2}pt` }}>
+                        {config.bankDetailsLabel}
+                    </h3>
+                    <div
+                        className="text-gray-700 mb-4"
+                        style={{ fontSize: `${config.bankDetailsFontSize}pt` }}
+                        dangerouslySetInnerHTML={{ __html: config.bankDetailsContent }}
+                    />
                 </>
             )}
 
