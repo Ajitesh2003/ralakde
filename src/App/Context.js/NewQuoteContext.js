@@ -60,11 +60,19 @@ export const QuoteProvider = ({ children }) => {
                 // Organisation Details
                 showOrgLogo: true,
                 orgLogo: null,
-                orgLogoSize: 'medium',
+                orgLogoSize: 80,
                 showOrgName: true,
+                orgName: '',
                 orgNameColor: '#333333',
                 orgNameFontSize: 10,
                 showOrgAddress: true,
+                orgAddressLine1: '',
+                orgAddressLine2: '',
+                orgCountry: '',
+                orgVAT: '',
+                orgPhone: '',
+                orgEmail: '',
+                orgWebsite: '',
 
                 // Customer Details
                 customerNameColor: '#333333',

@@ -23,6 +23,11 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
 
   // Helper to get logo size in pixels
   const getLogoSize = () => {
+    // Support both numeric pixel values and legacy string values
+    if (typeof transConfig.orgLogoSize === 'number') {
+      return transConfig.orgLogoSize;
+    }
+    // Legacy support for old string values
     const sizes = {
       'small': 50,
       'medium': 80,
@@ -111,18 +116,18 @@ const PdfDetails = ({ data, themeColor, templateConfig }) => {
             fontSize: `${transConfig.orgNameFontSize || templateConfig.fontSize || 10}pt`
           }}
         >
-          {companyDetails.name}
+          {transConfig.orgName || companyDetails.name}
         </p>
       )}
       {transConfig.showOrgAddress && (
         <>
-          <p>{companyDetails.addressLine1}</p>
-          <p>{companyDetails.addressLine2}</p>
-          <p>{companyDetails.country}</p>
-          <p><span style={{ color: templateConfig.labelColor || '#1f2937' }}>VAT</span> {companyDetails.vat}</p>
-          <p>{companyDetails.phone}</p>
-          <p>{companyDetails.email}</p>
-          <p>{companyDetails.website}</p>
+          <p>{transConfig.orgAddressLine1 || companyDetails.addressLine1}</p>
+          <p>{transConfig.orgAddressLine2 || companyDetails.addressLine2}</p>
+          <p>{transConfig.orgCountry || companyDetails.country}</p>
+          <p><span style={{ color: templateConfig.labelColor || '#1f2937' }}>VAT</span> {transConfig.orgVAT || companyDetails.vat}</p>
+          <p>{transConfig.orgPhone || companyDetails.phone}</p>
+          <p>{transConfig.orgEmail || companyDetails.email}</p>
+          <p>{transConfig.orgWebsite || companyDetails.website}</p>
         </>
       )}
     </div>

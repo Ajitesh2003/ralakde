@@ -12,13 +12,15 @@ const PdfHeader = ({ data, templateConfig }) => {
     backgroundColor = '#ffffff',
     imagePosition = 'center',
     logoPosition = 'left',
-    logoSize = 'medium',
     quoteTitleText = 'Quote',
     quoteTitlePosition = 'right',
     enableCustomContent = false,
     customContent = '',
     customContentPosition = 'below'
   } = headerConfig;
+
+  // Get organization logo size from transactionDetails (used by sidebar controls)
+  const logoSize = templateConfig?.transactionDetails?.orgLogoSize || 80;
 
   // Process custom content with placeholders
   const processedCustomContent = React.useMemo(() => {
@@ -43,14 +45,19 @@ const PdfHeader = ({ data, templateConfig }) => {
     return positions[imagePosition] || 'center center';
   };
 
-  // Helper to get logo size class
-  const getLogoSizeClass = () => {
+  // Helper to get logo size in pixels (for inline styles)
+  const getLogoSizeInPixels = () => {
+    // Support both numeric pixel values and legacy string values
+    if (typeof logoSize === 'number') {
+      return logoSize;
+    }
+    // Legacy support for old string values
     const sizes = {
-      'small': 'max-h-[50px]',
-      'medium': 'max-h-[80px]',
-      'large': 'max-h-[120px]',
+      'small': 50,
+      'medium': 80,
+      'large': 120,
     };
-    return sizes[logoSize] || 'max-h-[80px]';
+    return sizes[logoSize] || 80;
   };
 
   // Helper to get logo position justify class
@@ -113,16 +120,29 @@ const PdfHeader = ({ data, templateConfig }) => {
           {/* Left: Logo & Company Info */}
           <div className="w-3/4  p-3 text-sm text-gray-800">
             <div className={`flex items-start ${getLogoJustifyClass()}`}>
-              <img src={LOGO_URL} alt="Ralakde Logo" className={`${getLogoSizeClass()} w-auto object-contain mr-2`} />
-              <div>
-                <p className="font-bold text-lg leading-snug">{companyDetails.name}</p>
-                <p>{companyDetails.addressLine1}</p>
-                <p>{companyDetails.addressLine2}</p>
-                <p>{companyDetails.country}</p>
-                <p>VAT {companyDetails.vat}</p>
-                <p>{companyDetails.phone}</p>
-                <p>{companyDetails.email}</p>
-                <p>{companyDetails.website}</p>
+              {templateConfig.transactionDetails?.showOrgLogo && (
+                <img
+                  src={templateConfig.transactionDetails?.orgLogo || LOGO_URL}
+                  alt="Ralakde Logo"
+                  className="w-auto object-contain mr-2"
+                  style={{ maxHeight: `${getLogoSizeInPixels()}px` }}
+                />
+              )}
+              <div className='ml-2'>
+                {templateConfig.transactionDetails?.showOrgName && (
+                  <p className="font-bold text-lg leading-snug">{templateConfig.transactionDetails?.orgName || companyDetails.name}</p>
+                )}
+                {templateConfig.transactionDetails?.showOrgAddress && (
+                  <>
+                    <p>{templateConfig.transactionDetails?.orgAddressLine1 || companyDetails.addressLine1}</p>
+                    <p>{templateConfig.transactionDetails?.orgAddressLine2 || companyDetails.addressLine2}</p>
+                    <p>{templateConfig.transactionDetails?.orgCountry || companyDetails.country}</p>
+                    <p>VAT {templateConfig.transactionDetails?.orgVAT || companyDetails.vat}</p>
+                    <p>{templateConfig.transactionDetails?.orgPhone || companyDetails.phone}</p>
+                    <p>{templateConfig.transactionDetails?.orgEmail || companyDetails.email}</p>
+                    <p>{templateConfig.transactionDetails?.orgWebsite || companyDetails.website}</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -246,22 +266,31 @@ const PdfHeader = ({ data, templateConfig }) => {
 
        <div className="flex items-start border-b-2 border-gray-200 pb-10 mb-6">
         <div className={`w-1/2 flex ${getLogoJustifyClass()}`}>
-          <img
-            src={LOGO_URL}
-            alt="Ralake Limited Logo"
-            className={`${getLogoSizeClass()} w-auto object-contain`}
-          />
+          {templateConfig.transactionDetails?.showOrgLogo && (
+            <img
+              src={templateConfig.transactionDetails?.orgLogo || LOGO_URL}
+              alt="Ralake Limited Logo"
+              className="w-auto object-contain"
+              style={{ maxHeight: `${getLogoSizeInPixels()}px` }}
+            />
+          )}
         </div>
 
        <div className='ml-2'>
-                  <p className="font-bold text-lg leading-snug mb-2">Ralakde</p>
-                  <p>{companyDetails.addressLine1}</p>
-                  <p>{companyDetails.addressLine2}</p>
-                  <p>{companyDetails.country}</p>
-                  <p>VAT {companyDetails.vat}</p>
-                  <p>{companyDetails.phone}</p>
-                  <p>{companyDetails.email}</p>
-                  <p>{companyDetails.website}</p>
+                  {templateConfig.transactionDetails?.showOrgName && (
+                    <p className="font-bold text-lg leading-snug mb-2">{templateConfig.transactionDetails?.orgName || companyDetails.name}</p>
+                  )}
+                  {templateConfig.transactionDetails?.showOrgAddress && (
+                    <>
+                      <p>{templateConfig.transactionDetails?.orgAddressLine1 || companyDetails.addressLine1}</p>
+                      <p>{templateConfig.transactionDetails?.orgAddressLine2 || companyDetails.addressLine2}</p>
+                      <p>{templateConfig.transactionDetails?.orgCountry || companyDetails.country}</p>
+                      <p>VAT {templateConfig.transactionDetails?.orgVAT || companyDetails.vat}</p>
+                      <p>{templateConfig.transactionDetails?.orgPhone || companyDetails.phone}</p>
+                      <p>{templateConfig.transactionDetails?.orgEmail || companyDetails.email}</p>
+                      <p>{templateConfig.transactionDetails?.orgWebsite || companyDetails.website}</p>
+                    </>
+                  )}
                 </div>
        </div>
 
@@ -288,11 +317,14 @@ const PdfHeader = ({ data, templateConfig }) => {
 
       <div className="flex justify-between items-start mb-6">
         <div className={`w-1/2 flex ${getLogoJustifyClass()}`}>
-          <img
-            src={LOGO_URL}
-            alt="Ralake Limited Logo"
-            className={`${getLogoSizeClass()} w-auto object-contain`}
-          />
+          {templateConfig.transactionDetails?.showOrgLogo && (
+            <img
+              src={templateConfig.transactionDetails?.orgLogo || LOGO_URL}
+              alt="Ralake Limited Logo"
+              className="w-auto object-contain"
+              style={{ maxHeight: `${getLogoSizeInPixels()}px` }}
+            />
+          )}
         </div>
 
         <div className={`w-1/2 mt-10 mr-4 flex flex-col ${getTitlePositionClass()}`}>

@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { FileText, FileType, Grid, Table, DollarSign, FileCheck, ChevronDown, ChevronRight, Info, Upload, Settings, Plus } from 'lucide-react';
+import { FileText, FileType, Grid, Table, DollarSign, FileCheck, ChevronDown, ChevronRight, Info, Upload, Settings, Plus, X } from 'lucide-react';
 import HeaderContentModal from './HeaderContentModal';
 import FooterContentModal from './FooterContentModal';
 import AttentionContentModal from './AttentionContentModal';
 import ItemDescriptionModal from './ItemDescriptionModal';
 import BankDetailsModal from './BankDetailsModal';
 import AnnexureContentModal from './AnnexureContentModal';
+import OrganizationDetailsModal from './OrganizationDetailsModal';
 
 const TemplateEditorSidebar = ({
     templateConfig,
@@ -21,6 +22,7 @@ const TemplateEditorSidebar = ({
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isBankDetailsModalOpen, setIsBankDetailsModalOpen] = useState(false);
     const [isAnnexureModalOpen, setIsAnnexureModalOpen] = useState(false);
+    const [isOrgDetailsModalOpen, setIsOrgDetailsModalOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState({
         templateProperties: true,
         font: false,
@@ -968,36 +970,52 @@ const TemplateEditorSidebar = ({
                                     {/* Upload Logo / Logo Preview */}
                                     {templateConfig.transactionDetails?.showOrgLogo && (
                                         <>
-                                            <div
-                                                className="border border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors bg-gray-100 relative"
-                                                onClick={() => {
-                                                    const input = document.createElement('input');
-                                                    input.type = 'file';
-                                                    input.accept = 'image/*';
-                                                    input.onchange = (e) => {
-                                                        const file = e.target.files[0];
-                                                        if (file) {
-                                                            const reader = new FileReader();
-                                                            reader.onload = (event) => {
-                                                                handleTransactionDetailsChange('orgLogo', event.target.result);
-                                                            };
-                                                            reader.readAsDataURL(file);
-                                                        }
-                                                    };
-                                                    input.click();
-                                                }}
-                                            >
-                                                {templateConfig.transactionDetails?.orgLogo ? (
-                                                    <img
-                                                        src={templateConfig.transactionDetails.orgLogo}
-                                                        alt="Organization Logo"
-                                                        className="max-h-32 mx-auto object-contain"
-                                                    />
-                                                ) : (
-                                                    <div className="py-8">
-                                                        <Upload className="w-6 h-6 mx-auto mb-2 text-gray-500" />
-                                                        <p className="text-sm text-gray-600">Upload your Files</p>
-                                                    </div>
+                                            <div className="relative">
+                                                <div
+                                                    className="border border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors bg-gray-100"
+                                                    onClick={() => {
+                                                        const input = document.createElement('input');
+                                                        input.type = 'file';
+                                                        input.accept = 'image/*';
+                                                        input.onchange = (e) => {
+                                                            const file = e.target.files[0];
+                                                            if (file) {
+                                                                const reader = new FileReader();
+                                                                reader.onload = (event) => {
+                                                                    handleTransactionDetailsChange('orgLogo', event.target.result);
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        };
+                                                        input.click();
+                                                    }}
+                                                >
+                                                    {templateConfig.transactionDetails?.orgLogo ? (
+                                                        <img
+                                                            src={templateConfig.transactionDetails.orgLogo}
+                                                            alt="Organization Logo"
+                                                            className="max-h-32 mx-auto object-contain"
+                                                        />
+                                                    ) : (
+                                                        <div className="py-8">
+                                                            <Upload className="w-6 h-6 mx-auto mb-2 text-gray-500" />
+                                                            <p className="text-sm text-gray-600">Upload your Files</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Clear Logo Button - Only show when logo exists */}
+                                                {templateConfig.transactionDetails?.orgLogo && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleTransactionDetailsChange('orgLogo', null);
+                                                        }}
+                                                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors z-10"
+                                                        title="Remove logo"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
                                                 )}
                                             </div>
 
@@ -1013,22 +1031,25 @@ const TemplateEditorSidebar = ({
                                                     <label className="text-sm font-medium text-gray-700">
                                                         Resize Logo
                                                     </label>
-                                                    <Info className="w-4 h-4 text-gray-400" />
+                                                    <span className="text-xs text-gray-500 font-medium">
+                                                        {templateConfig.transactionDetails?.orgLogoSize || 80}px
+                                                    </span>
                                                 </div>
                                                 <input
                                                     type="range"
-                                                    min="1"
-                                                    max="3"
-                                                    value={
-                                                        templateConfig.transactionDetails?.orgLogoSize === 'small' ? 1 :
-                                                        templateConfig.transactionDetails?.orgLogoSize === 'large' ? 3 : 2
-                                                    }
+                                                    min="20"
+                                                    max="200"
+                                                    step="5"
+                                                    value={templateConfig.transactionDetails?.orgLogoSize || 80}
                                                     onChange={(e) => {
-                                                        const sizeMap = { 1: 'small', 2: 'medium', 3: 'large' };
-                                                        handleTransactionDetailsChange('orgLogoSize', sizeMap[e.target.value]);
+                                                        handleTransactionDetailsChange('orgLogoSize', parseInt(e.target.value));
                                                     }}
                                                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                                 />
+                                                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                    <span>20px</span>
+                                                    <span>200px</span>
+                                                </div>
                                             </div>
                                         </>
                                     )}
@@ -1046,6 +1067,22 @@ const TemplateEditorSidebar = ({
                                             Show Organisation Name
                                         </label>
                                     </div>
+
+                                    {/* Organisation Name Text Input */}
+                                    {templateConfig.transactionDetails?.showOrgName && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Organisation Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={templateConfig.transactionDetails?.orgName || ''}
+                                                onChange={(e) => handleTransactionDetailsChange('orgName', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Leave empty to use default company name"
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* Organisation Name Styling - Color and Font Size in One Row */}
                                     {templateConfig.transactionDetails?.showOrgName && (
@@ -1114,10 +1151,7 @@ const TemplateEditorSidebar = ({
                                     {/* Organization Address Format Button */}
                                     {templateConfig.transactionDetails?.showOrgAddress && (
                                         <button
-                                            onClick={() => {
-                                                // TODO: Open Organization Address Format Modal
-                                                alert('Organization Address Format modal coming soon');
-                                            }}
+                                            onClick={() => setIsOrgDetailsModalOpen(true)}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
                                             <Settings className="w-4 h-4" />
@@ -2767,6 +2801,22 @@ const TemplateEditorSidebar = ({
                             ...templateConfig.otherDetails,
                             annexureContent: content,
                             showAnnexure: content.trim() !== ''
+                        }
+                    });
+                }}
+            />
+
+            {/* Organization Details Modal */}
+            <OrganizationDetailsModal
+                isOpen={isOrgDetailsModalOpen}
+                onClose={() => setIsOrgDetailsModalOpen(false)}
+                initialData={templateConfig.transactionDetails || {}}
+                onSave={(formData) => {
+                    onConfigChange({
+                        ...templateConfig,
+                        transactionDetails: {
+                            ...templateConfig.transactionDetails,
+                            ...formData
                         }
                     });
                 }}
